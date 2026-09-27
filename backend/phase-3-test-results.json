@@ -1,0 +1,238 @@
+[
+  {
+    "name": "1. GET /health",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "status": "ok",
+      "service": "DHA Vault API",
+      "database": "connected"
+    }
+  },
+  {
+    "name": "2. POST /auth/register (Owner)",
+    "passed": true,
+    "status": 201,
+    "detail": {
+      "userId": "3e83ca9c-b4c7-4ddb-a923-6c28d86ac643",
+      "email": "dhanush_ai_1790512016543@dhavault.io"
+    }
+  },
+  {
+    "name": "3. POST /documents/upload (Driving Licence PDF)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "storagePath": "uploads/users/3e83ca9c-b4c7-4ddb-a923-6c28d86ac643/documents/6454230e-2ce6-4bf6-9f2a-3ac7c5a185a6/83b898e3-d21a-4919-ac55-88204eda0c15.pdf",
+      "fileName": "83b898e3-d21a-4919-ac55-88204eda0c15.pdf",
+      "originalFileName": "Driving_Licence_Dhanush.pdf",
+      "fileSize": 483,
+      "mimeType": "application/pdf",
+      "fileType": "PDF",
+      "checksum": "e95aafa3686fe6ba30256d9adf1afc80a47199a18ba863ab125c54e5e6340884"
+    }
+  },
+  {
+    "name": "4. POST /documents (Fast View Non-blocking Create)",
+    "passed": true,
+    "status": 201,
+    "detail": {
+      "id": "e212975a-cae5-4bce-be9f-51875531d14b",
+      "ocrStatus": "PENDING"
+    }
+  },
+  {
+    "name": "5. POST /documents/:id/ocr (Trigger OCR Engine)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "ocrStatus": "FAILED",
+      "confidence": 0.9,
+      "provider": "local"
+    }
+  },
+  {
+    "name": "6. Intelligence: Document Classification & Field Extraction",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "documentType": "DRIVING_LICENCE",
+      "extractedFields": {
+        "name": "NAME Dhanush AV",
+        "issueDate": "15/08/1995",
+        "expiryDate": "18/11/2036",
+        "licenseNumber": "KA01-20150001234",
+        "documentNumber": "KA01-20150001234",
+        "vehicleClasses": "MCWG, LMV"
+      }
+    }
+  },
+  {
+    "name": "7. PATCH /documents/:id/intelligence (User Confirmation & Edit)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "title": "Confirmed Driving Licence - Dhanush",
+      "tagsCount": 5,
+      "expiry": "2036-11-18T00:00:00.000Z"
+    }
+  },
+  {
+    "name": "8. POST /documents (Expiring Soon Insurance Doc)",
+    "passed": true,
+    "status": 201,
+    "detail": {
+      "id": "c54c50b2-c9aa-4fb5-97a2-91759809d635",
+      "expiryDate": "2026-10-07T12:26:57.253Z"
+    }
+  },
+  {
+    "name": "9. GET /search?q=Dhanush (OCR Text Search)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "totalMatches": 2,
+      "firstTitle": "Vehicle Insurance Policy 2026"
+    }
+  },
+  {
+    "name": "10. GET /search?q=documents expiring (Intent Filter)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "matchReason": "Expiring in less than 30 days",
+      "count": 1
+    }
+  },
+  {
+    "name": "11. GET /search?q=2036 (Year Intent Match)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "count": 1
+    }
+  },
+  {
+    "name": "12. GET /documents/:id/reminders (Automatic Reminders Scheduled)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "count": 2,
+      "reminders": [
+        "Vehicle Insurance Policy 2026 expires in 7 days",
+        "Vehicle Insurance Policy 2026 expires in 1 days"
+      ]
+    }
+  },
+  {
+    "name": "13. POST /documents/:id/reminders (Custom Reminder Added)",
+    "passed": true,
+    "status": 201,
+    "detail": {
+      "id": "a87da179-e30e-44c2-8168-72f4fc8fa826",
+      "documentId": "c54c50b2-c9aa-4fb5-97a2-91759809d635",
+      "userId": "3e83ca9c-b4c7-4ddb-a923-6c28d86ac643",
+      "reminderDate": "2026-10-02T12:26:57.366Z",
+      "notes": "Custom check before renewal",
+      "isTriggered": false,
+      "createdAt": "2026-09-27T12:26:57.377Z"
+    }
+  },
+  {
+    "name": "14. POST /reminders/check (Reminders Engine Sweep)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "triggeredCount": 0,
+      "notificationsCreated": 0
+    }
+  },
+  {
+    "name": "15. DELETE /documents/:id/reminders/:reminderId",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "success": true
+    }
+  },
+  {
+    "name": "16. GET /notifications (Notifications Center List & Unread Count)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "count": 2,
+      "unreadCount": 2
+    }
+  },
+  {
+    "name": "17. PATCH /notifications/:id/read",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "id": "e372f3fb-46a4-4f36-8e21-9febb5242dce",
+      "userId": "3e83ca9c-b4c7-4ddb-a923-6c28d86ac643",
+      "title": "✓ Vehicle Insurance Policy 2026 scanned",
+      "message": "Identified as INSURANCE with 90% confidence.",
+      "type": "OCR_COMPLETE",
+      "isRead": true,
+      "metadata": {
+        "confidence": 0.9,
+        "documentId": "c54c50b2-c9aa-4fb5-97a2-91759809d635",
+        "documentType": "INSURANCE"
+      },
+      "createdAt": "2026-09-27T12:26:57.351Z"
+    }
+  },
+  {
+    "name": "18. POST /notifications/read-all",
+    "passed": true,
+    "status": 201,
+    "detail": {
+      "success": true
+    }
+  },
+  {
+    "name": "19. GET /documents/stats/overview (Vault Health & Attention Required)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "total": 2,
+      "valid": 2,
+      "expiringSoon": 1,
+      "attentionRequiredCount": 1
+    }
+  },
+  {
+    "name": "20. Security: Cross-User Trigger OCR Rejection (403/404)",
+    "passed": true,
+    "status": 403,
+    "detail": {
+      "statusCode": 403,
+      "timestamp": "2026-09-27T12:26:58.040Z",
+      "error": "Forbidden",
+      "message": "You do not have permission to access this document"
+    }
+  },
+  {
+    "name": "21. Security: Cross-User Intelligence Edit Rejection (403/404)",
+    "passed": true,
+    "status": 403,
+    "detail": {
+      "statusCode": 403,
+      "timestamp": "2026-09-27T12:26:58.055Z",
+      "error": "Forbidden",
+      "message": "You do not have permission to access this document"
+    }
+  },
+  {
+    "name": "22. Clean Document Cleanup (DELETE /documents/:id)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "cleaned": [
+        "e212975a-cae5-4bce-be9f-51875531d14b",
+        "c54c50b2-c9aa-4fb5-97a2-91759809d635"
+      ]
+    }
+  }
+]

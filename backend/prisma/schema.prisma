@@ -1,0 +1,556 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String               @id @default(uuid())
+  email             String               @unique
+  passwordHash      String
+  isActive          Boolean              @default(true)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  profile           Profile?
+  documents         Document[]
+  categories        Category[]
+  tags              Tag[]
+  securitySettings  SecuritySettings?
+  devices           Device[]
+  refreshTokens     RefreshToken[]
+  shareLinks        ShareLink[]
+  accessLogs        DocumentAccessLog[]
+  notifications     Notification[]
+  documentReminders DocumentReminder[]
+  syncConflicts     SyncConflict[]
+  cloudBackups      CloudBackup[]
+
+  // Phase 5 Additions
+  familyVaultsOwned          FamilyVault[]          @relation("FamilyOwner")
+  familyMemberships          FamilyMembership[]
+  familyInvitationsSent      FamilyInvitation[]      @relation("InvitedByUser")
+  familyDocAccessShared      FamilyDocumentAccess[]  @relation("FamilyDocSharedBy")
+  familyDocAccessTarget      FamilyDocumentAccess[]  @relation("FamilyDocTarget")
+  sharesSent                 DocumentShare[]         @relation("ShareOwner")
+  sharesReceived             DocumentShare[]         @relation("ShareRecipient")
+  emergencyAccessOwned       EmergencyAccess[]       @relation("EmergencyOwner")
+  emergencyAccessDelegated   EmergencyAccess[]       @relation("EmergencyDelegate")
+  recoveryDelegationsOwned   RecoveryDelegation[]    @relation("RecoveryOwner")
+  recoveryDelegationsDelegated RecoveryDelegation[]  @relation("RecoveryDelegate")
+
+  @@map("users")
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  fullName  String?
+  phone     String?
+  avatarUrl String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Category {
+  id        String     @id @default(uuid())
+  userId    String
+  name      String
+  icon      String?
+  color     String?
+  isSystem  Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("categories")
+}
+
+model Tag {
+  id           String        @id @default(uuid())
+  userId       String
+  name         String
+  color        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentTags DocumentTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+model Document {
+  id            String              @id @default(uuid())
+  userId        String
+  categoryId    String?
+  title         String
+  description   String?
+  documentType  String              @default("OTHER")
+  fileType      String              @default("PDF")
+  fileSize      Int                 @default(0)
+  mimeType      String              @default("application/pdf")
+  storagePath     String
+  thumbnailPath   String?
+  extractedText   String?
+  ocrStatus       String              @default("PENDING")
+  ocrProvider     String?
+  ocrConfidence   Float?
+  ocrProcessedAt  DateTime?
+  extractedFields Json?
+  issueDate       DateTime?
+  expiryDate      DateTime?
+  isFavorite      Boolean             @default(false)
+  isArchived      Boolean             @default(false)
+  isEncrypted     Boolean             @default(false)
+  syncStatus      String              @default("SYNCED")
+  cloudObjectKey  String?
+  checksum        String?
+  lastSyncedAt    DateTime?
+  encryptionVersion Int               @default(1)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category      Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  files         DocumentFile[]
+  tags          DocumentTag[]
+  versions      DocumentVersion[]
+  shareLinks    ShareLink[]
+  accessLogs    DocumentAccessLog[]
+  reminders     DocumentReminder[]
+  conflicts     SyncConflict[]
+
+  // Phase 5 Additions
+  familyAccess  FamilyDocumentAccess[]
+  shares        DocumentShare[]
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([expiryDate])
+  @@index([createdAt])
+  @@index([title])
+  @@index([documentType])
+  @@index([ocrStatus])
+  @@index([syncStatus])
+  @@index([userId, isFavorite])
+  @@index([userId, isArchived])
+  @@map("documents")
+}
+
+model DocumentFile {
+  id               String   @id @default(uuid())
+  documentId       String
+  fileName         String
+  originalFileName String
+  fileSize         Int
+  mimeType         String
+  storagePath      String
+  isPrimary        Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  document         Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_files")
+}
+
+model DocumentTag {
+  id         String   @id @default(uuid())
+  documentId String
+  tagId      String
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, tagId])
+  @@index([documentId])
+  @@index([tagId])
+  @@map("document_tags")
+}
+
+model DocumentVersion {
+  id                String   @id @default(uuid())
+  documentId        String
+  versionNumber     Int      @default(1)
+  fileSize          Int
+  storagePath       String
+  checksum          String?
+  cloudObjectKey    String?
+  encryptionVersion Int      @default(1)
+  deviceId          String?
+  changeNotes       String?
+  createdById       String
+  createdAt         DateTime @default(now())
+
+  document          Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_versions")
+}
+
+model SecuritySettings {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  pinHash            String?
+  isPinEnabled       Boolean  @default(false)
+  isBiometricEnabled Boolean  @default(false)
+  autoLockSeconds    Int      @default(60)
+  twoFactorEnabled   Boolean  @default(false)
+  twoFactorSecret    String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("security_settings")
+}
+
+model Device {
+  id           String   @id @default(uuid())
+  userId       String
+  deviceId     String
+  deviceName   String
+  platform     String
+  pushToken    String?
+  lastActiveAt DateTime @default(now())
+  isTrusted    Boolean  @default(true)
+  isLocked     Boolean  @default(false)
+  lastSyncedAt DateTime?
+  syncStatus   String   @default("IDLE")
+  appVersion   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@index([userId])
+  @@map("devices")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  deviceId  String?
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+model ShareLink {
+  id            String            @id @default(uuid())
+  documentId    String
+  userId        String
+  token         String            @unique
+  passwordHash  String?
+  allowDownload Boolean           @default(true)
+  expiresAt     DateTime?
+  maxUses       Int?
+  useCount      Int               @default(0)
+  isRevoked     Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+
+  document      Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessLogs    ShareAccessLog[]
+
+  @@index([userId])
+  @@index([documentId])
+  @@index([token])
+  @@map("share_links")
+}
+
+model ShareAccessLog {
+  id          String    @id @default(uuid())
+  shareLinkId String
+  ipAddress   String?
+  userAgent   String?
+  accessedAt  DateTime  @default(now())
+
+  shareLink   ShareLink @relation(fields: [shareLinkId], references: [id], onDelete: Cascade)
+
+  @@index([shareLinkId])
+  @@map("share_access_logs")
+}
+
+model DocumentAccessLog {
+  id         String    @id @default(uuid())
+  userId     String
+  documentId String?
+  action     String
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document   Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([documentId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("document_access_logs")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("GENERAL")
+  isRead    Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model DocumentReminder {
+  id           String   @id @default(uuid())
+  documentId   String
+  userId       String
+  reminderDate DateTime
+  notes        String?
+  isTriggered  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, reminderDate])
+  @@index([documentId])
+  @@map("document_reminders")
+}
+
+model SyncConflict {
+  id              String    @id @default(uuid())
+  userId          String
+  documentId      String
+  localVersionId  String?
+  remoteVersionId String?
+  status          String    @default("OPEN")
+  resolution      String?
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document        Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([documentId])
+  @@map("sync_conflicts")
+}
+
+model CloudBackup {
+  id              String    @id @default(uuid())
+  userId          String
+  backupStatus    String    @default("COMPLETED")
+  totalDocuments  Int       @default(0)
+  totalBytes      Float     @default(0)
+  storageProvider String    @default("local")
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  errorDetails    String?
+  createdAt       DateTime  @default(now())
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([backupStatus])
+  @@map("cloud_backups")
+}
+
+// ============================================================
+// PHASE 5: FAMILY VAULT, ADVANCED SHARING & EMERGENCY ACCESS
+// ============================================================
+
+model FamilyVault {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String
+  status    String   @default("ACTIVE") // ACTIVE, SUSPENDED, ARCHIVED
+  settings  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner          User                   @relation("FamilyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members        FamilyMembership[]
+  invitations    FamilyInvitation[]
+  documentAccess FamilyDocumentAccess[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@map("family_vaults")
+}
+
+model FamilyMembership {
+  id            String    @id @default(uuid())
+  familyVaultId String
+  userId        String
+  role          String    @default("MEMBER") // OWNER, MEMBER, VIEWER
+  status        String    @default("ACTIVE") // INVITED, ACTIVE, SUSPENDED, REMOVED
+  invitedBy     String?
+  joinedAt      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  familyVault   FamilyVault @relation(fields: [familyVaultId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([familyVaultId, userId])
+  @@index([familyVaultId])
+  @@index([userId])
+  @@index([role])
+  @@index([status])
+  @@map("family_memberships")
+}
+
+model FamilyInvitation {
+  id            String   @id @default(uuid())
+  familyVaultId String
+  email         String
+  tokenHash     String   @unique
+  role          String   @default("MEMBER") // MEMBER, VIEWER
+  status        String   @default("PENDING") // PENDING, ACCEPTED, EXPIRED, REVOKED
+  expiresAt     DateTime
+  invitedById   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  familyVault   FamilyVault @relation(fields: [familyVaultId], references: [id], onDelete: Cascade)
+  invitedBy     User        @relation("InvitedByUser", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([familyVaultId])
+  @@index([email])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("family_invitations")
+}
+
+model FamilyDocumentAccess {
+  id            String   @id @default(uuid())
+  familyVaultId String
+  documentId    String
+  sharedById    String
+  targetUserId  String?
+  permissions   Json     // ["VIEW", "DOWNLOAD"]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  familyVault   FamilyVault @relation(fields: [familyVaultId], references: [id], onDelete: Cascade)
+  document      Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sharedBy      User        @relation("FamilyDocSharedBy", fields: [sharedById], references: [id], onDelete: Cascade)
+  targetUser    User?       @relation("FamilyDocTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@unique([familyVaultId, documentId, targetUserId])
+  @@index([familyVaultId])
+  @@index([documentId])
+  @@index([sharedById])
+  @@index([targetUserId])
+  @@map("family_document_access")
+}
+
+model DocumentShare {
+  id              String    @id @default(uuid())
+  documentId      String
+  ownerId         String
+  recipientUserId String?
+  recipientEmail  String?
+  permissions     Json      // ["VIEW", "DOWNLOAD"]
+  status          String    @default("ACTIVE") // ACTIVE, EXPIRED, REVOKED, MAX_VIEWS_REACHED
+  keyEnvelope     Json?     // { wrappedKey: string, iv: string, authTag: string, version: number }
+  allowDownload   Boolean   @default(true)
+  maxViews        Int?
+  viewCount       Int       @default(0)
+  watermarkText   String?
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  document        Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  owner           User      @relation("ShareOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  recipientUser   User?     @relation("ShareRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([recipientUserId])
+  @@index([recipientEmail])
+  @@index([documentId])
+  @@index([status])
+  @@map("document_shares")
+}
+
+model EmergencyAccess {
+  id                   String    @id @default(uuid())
+  ownerId              String
+  delegateUserId       String?
+  delegateEmail        String
+  status               String    @default("PENDING") // PENDING, ACTIVE, TRIGGERED, EXPIRED, REVOKED, COMPLETED
+  activationDelayHours Int       @default(48)
+  triggerRequestedAt   DateTime?
+  activatedAt          DateTime?
+  expiresAt            DateTime?
+  scope                String    @default("SELECTED_DOCUMENTS") // ALL, SELECTED_DOCUMENTS, CATEGORIES, FAMILY_DOCUMENTS
+  selectedDocIds       Json?
+  notes                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  owner                User      @relation("EmergencyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  delegateUser         User?     @relation("EmergencyDelegate", fields: [delegateUserId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([delegateUserId])
+  @@index([delegateEmail])
+  @@index([status])
+  @@map("emergency_access")
+}
+
+model RecoveryDelegation {
+  id              String    @id @default(uuid())
+  ownerId         String
+  delegateUserId  String?
+  delegateEmail   String
+  status          String    @default("PENDING") // PENDING, ACTIVE, REVOKED, COMPLETED
+  recoveryPayload Json?
+  expiresAt       DateTime?
+  acceptedAt      DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  owner           User      @relation("RecoveryOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  delegateUser    User?     @relation("RecoveryDelegate", fields: [delegateUserId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([delegateUserId])
+  @@index([delegateEmail])
+  @@index([status])
+  @@map("recovery_delegations")
+}
+

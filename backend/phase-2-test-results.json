@@ -1,0 +1,310 @@
+[
+  {
+    "name": "1. GET /health",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "status": "ok",
+      "service": "DHA Vault API",
+      "database": "connected"
+    }
+  },
+  {
+    "name": "2. POST /auth/register",
+    "passed": true,
+    "status": 201,
+    "detail": {
+      "userId": "a6ed3f1e-9321-4935-814b-1d7dcec98d4b",
+      "email": "dha_vault_owner_1790512272873@dhavault.io"
+    }
+  },
+  {
+    "name": "3. GET /categories",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "count": 8
+    }
+  },
+  {
+    "name": "4. POST /documents/upload (PDF with Magic Bytes)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "storagePath": "uploads/users/a6ed3f1e-9321-4935-814b-1d7dcec98d4b/documents/54410102-9a73-4152-b8bb-5e29ec0d23d5/69c14c43-060c-4d0b-9234-3bace26fe4f2.pdf",
+      "fileName": "69c14c43-060c-4d0b-9234-3bace26fe4f2.pdf",
+      "originalFileName": "Aadhaar_Official_2026.pdf",
+      "fileSize": 285,
+      "mimeType": "application/pdf",
+      "fileType": "PDF",
+      "checksum": "0b4a2c03b783a442f62898604f1579e240a49ce18f3bde7d5095e3c4776a32e4"
+    }
+  },
+  {
+    "name": "5. POST /documents (Metadata Ingestion)",
+    "passed": true,
+    "status": 201,
+    "detail": {
+      "id": "237ce527-5230-46f9-aaa5-f776dee570ac",
+      "title": "National Aadhaar Identification Card"
+    }
+  },
+  {
+    "name": "6. GET /documents/:id/preview (Stream Preview)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "bytes": 285
+    }
+  },
+  {
+    "name": "7. GET /documents/:id/download (Stream Download)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "bytes": 285
+    }
+  },
+  {
+    "name": "8. POST /documents/:id/favorite (Quick Access Pin)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "isFavorite": true
+    }
+  },
+  {
+    "name": "9. GET /documents/recent",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "count": 1,
+      "firstDoc": "National Aadhaar Identification Card"
+    }
+  },
+  {
+    "name": "10. GET /documents/stats/overview",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "totalDocuments": 1,
+      "validDocuments": 1,
+      "expiringSoonDocuments": 1,
+      "expiredDocuments": 0,
+      "noExpiryDocuments": 0,
+      "ocrProcessingCount": 0,
+      "ocrCompletedCount": 1,
+      "favoriteDocuments": 1,
+      "archivedDocuments": 0,
+      "totalStorageBytes": 285,
+      "attentionRequired": [
+        {
+          "id": "237ce527-5230-46f9-aaa5-f776dee570ac",
+          "title": "National Aadhaar Identification Card",
+          "documentType": "AADHAAR",
+          "expiryDate": "2026-10-12T12:31:13.432Z",
+          "ocrStatus": "COMPLETED",
+          "ocrConfidence": 0.9,
+          "status": "EXPIRING_SOON"
+        }
+      ],
+      "categories": [
+        {
+          "id": "6f215011-93bb-4fcd-945f-3a2bb23646db",
+          "name": "Identity",
+          "icon": "badge",
+          "color": "#3B82F6",
+          "count": 1
+        },
+        {
+          "id": "4fe0a5c2-c27c-4e4f-8d63-544aaa167092",
+          "name": "Education",
+          "icon": "school",
+          "color": "#10B981",
+          "count": 0
+        },
+        {
+          "id": "0a0af178-93a4-4e35-ae80-83378572bd7b",
+          "name": "Vehicle",
+          "icon": "directions_car",
+          "color": "#F59E0B",
+          "count": 0
+        },
+        {
+          "id": "71d9eae8-0830-4ab0-a3d1-748d3ce3258a",
+          "name": "Finance",
+          "icon": "account_balance",
+          "color": "#8B5CF6",
+          "count": 0
+        },
+        {
+          "id": "c3278219-03e2-44b2-a7c6-3400fb99cef7",
+          "name": "Medical",
+          "icon": "medical_services",
+          "color": "#EF4444",
+          "count": 0
+        },
+        {
+          "id": "837950a0-690c-4d14-a22e-2ca37f550180",
+          "name": "Employment",
+          "icon": "work",
+          "color": "#06B6D4",
+          "count": 0
+        },
+        {
+          "id": "8818ca13-9087-4995-89c9-932e1db5db58",
+          "name": "Property",
+          "icon": "home",
+          "color": "#EC4899",
+          "count": 0
+        },
+        {
+          "id": "58997371-1314-47a5-a2ee-eaff0547dd02",
+          "name": "Other",
+          "icon": "folder",
+          "color": "#6B7280",
+          "count": 0
+        }
+      ]
+    }
+  },
+  {
+    "name": "11. GET /search?q=Aadhaar (Debounced Backend Search)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "count": 1,
+      "match": "National Aadhaar Identification Card"
+    }
+  },
+  {
+    "name": "12. GET /documents (Expiring Soon Filter)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "count": 1
+    }
+  },
+  {
+    "name": "13. POST /sharing/create (Secure Share Setup)",
+    "passed": true,
+    "status": 201,
+    "detail": {
+      "token": "GGScCSsMQhqUp0jhSbAFY8Gs82UUotgX",
+      "hasPassword": true
+    }
+  },
+  {
+    "name": "14. POST /sharing/public/:token (Authorized Public Access)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "title": "National Aadhaar Identification Card",
+      "noUserIdLeak": true,
+      "noStoragePathLeak": true
+    }
+  },
+  {
+    "name": "15. GET /sharing/public/:token/download (Authorized Public Stream)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "bytes": 285
+    }
+  },
+  {
+    "name": "16. Security: Public Share Wrong Password (401)",
+    "passed": true,
+    "status": 401,
+    "detail": {
+      "statusCode": 401,
+      "timestamp": "2026-09-27T12:31:14.454Z",
+      "error": "Unauthorized",
+      "message": "Invalid password for share link"
+    }
+  },
+  {
+    "name": "17. Security: View Limit Exceeded (403/410)",
+    "passed": true,
+    "status": 403,
+    "detail": {
+      "statusCode": 403,
+      "timestamp": "2026-09-27T12:31:14.596Z",
+      "error": "Forbidden",
+      "message": "Maximum views for this share link exceeded"
+    }
+  },
+  {
+    "name": "18. POST /sharing/:id/revoke",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "success": true,
+      "message": "Share link revoked"
+    }
+  },
+  {
+    "name": "19. Security: Revoked Share Access (410/404)",
+    "passed": true,
+    "status": 404,
+    "detail": {
+      "statusCode": 404,
+      "timestamp": "2026-09-27T12:31:14.615Z",
+      "error": "Not Found",
+      "message": "Share link is invalid or has been revoked"
+    }
+  },
+  {
+    "name": "20. Security: Cross-User Document Modification (403)",
+    "passed": true,
+    "status": 403,
+    "detail": {
+      "statusCode": 403,
+      "timestamp": "2026-09-27T12:31:15.144Z",
+      "error": "Forbidden",
+      "message": "You do not have permission to access this document"
+    }
+  },
+  {
+    "name": "21. Security: Cross-User Document Deletion (403)",
+    "passed": true,
+    "status": 403,
+    "detail": {
+      "statusCode": 403,
+      "timestamp": "2026-09-27T12:31:15.156Z",
+      "error": "Forbidden",
+      "message": "You do not have permission to access this document"
+    }
+  },
+  {
+    "name": "22. Security: Spoofed PDF Magic Bytes (400)",
+    "passed": true,
+    "status": 400,
+    "detail": {
+      "statusCode": 400,
+      "timestamp": "2026-09-27T12:31:15.165Z",
+      "error": "Bad Request",
+      "message": "Invalid PDF file signature (magic bytes mismatch)"
+    }
+  },
+  {
+    "name": "23. Security: Missing JWT Authentication (401)",
+    "passed": true,
+    "status": 401,
+    "detail": {
+      "statusCode": 401,
+      "timestamp": "2026-09-27T12:31:15.168Z",
+      "error": "Unauthorized",
+      "message": "Authentication credentials invalid or missing"
+    }
+  },
+  {
+    "name": "24. DELETE /documents/:id (Owner Purge)",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "success": true,
+      "message": "Document permanently deleted"
+    }
+  }
+]

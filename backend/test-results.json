@@ -1,0 +1,238 @@
+[
+  {
+    "name": "1. GET /health",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "status": "ok",
+      "service": "DHA Vault API",
+      "database": "connected"
+    }
+  },
+  {
+    "name": "2. POST /auth/register",
+    "passed": true,
+    "status": 201,
+    "detail": {
+      "userId": "75b6b13b-a0a4-480d-bed3-065412168657",
+      "email": "dha_tester_1790483244091@dhavault.io",
+      "hasToken": true
+    }
+  },
+  {
+    "name": "3. POST /auth/login",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "hasToken": true,
+      "tokenType": "Bearer"
+    }
+  },
+  {
+    "name": "4. GET /users/me",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "id": "75b6b13b-a0a4-480d-bed3-065412168657",
+      "email": "dha_tester_1790483244091@dhavault.io",
+      "profile": {
+        "fullName": "DHA Security Lead",
+        "phone": null,
+        "avatarUrl": null,
+        "bio": null,
+        "createdAt": "2026-09-27T04:27:25.061Z",
+        "updatedAt": "2026-09-27T04:27:25.061Z"
+      }
+    }
+  },
+  {
+    "name": "5. GET /categories",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "categoryCount": 8,
+      "firstCategory": "Education"
+    }
+  },
+  {
+    "name": "6. POST /categories",
+    "passed": true,
+    "status": 201,
+    "detail": {
+      "id": "bde8197e-77bb-4562-a9cc-5014af0e9e8c",
+      "userId": "75b6b13b-a0a4-480d-bed3-065412168657",
+      "name": "Tax Records 1790483245733",
+      "icon": "receipt_long",
+      "color": "#10B981",
+      "isSystem": false,
+      "createdAt": "2026-09-27T04:27:25.746Z",
+      "updatedAt": "2026-09-27T04:27:25.746Z"
+    }
+  },
+  {
+    "name": "7. POST /documents/upload",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "storagePath": "uploads/users/75b6b13b-a0a4-480d-bed3-065412168657/4da2661f-52f4-4b78-b4ab-69aaf8daf128.pdf",
+      "fileName": "4da2661f-52f4-4b78-b4ab-69aaf8daf128.pdf",
+      "originalFileName": "DHA_Passport.pdf",
+      "fileSize": 285,
+      "mimeType": "application/pdf",
+      "fileType": "PDF"
+    }
+  },
+  {
+    "name": "8. POST /documents",
+    "passed": true,
+    "status": 201,
+    "detail": {
+      "id": "45fd562f-c5cf-4129-af74-abfd5c8d484f",
+      "title": "Official Passport Verification",
+      "documentType": "PASSPORT"
+    }
+  },
+  {
+    "name": "9. GET /documents",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "total": 1,
+      "matchedTitle": "Official Passport Verification"
+    }
+  },
+  {
+    "name": "10. GET /documents/:id",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "id": "45fd562f-c5cf-4129-af74-abfd5c8d484f",
+      "title": "Official Passport Verification",
+      "category": "Identity"
+    }
+  },
+  {
+    "name": "11. PATCH /documents/:id",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "title": "Official Passport Verification — Updated",
+      "description": "Updated biometric passport notes"
+    }
+  },
+  {
+    "name": "12. GET /security/settings",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "isPinEnabled": false,
+      "isBiometricEnabled": false,
+      "autoLockSeconds": 60,
+      "twoFactorEnabled": false,
+      "createdAt": "2026-09-27T04:27:25.061Z",
+      "updatedAt": "2026-09-27T04:27:25.061Z"
+    }
+  },
+  {
+    "name": "13. POST /sharing/create",
+    "passed": true,
+    "status": 201,
+    "detail": {
+      "id": "43b31204-0c3b-48d0-8aac-952021723a21",
+      "token": "47wh7Cu_2DYPm9XRgjXk8hM8ZLkKSsJY",
+      "shareUrl": "/share/47wh7Cu_2DYPm9XRgjXk8hM8ZLkKSsJY",
+      "expiresAt": "2026-09-28T04:27:26.046Z",
+      "maxUses": null,
+      "allowDownload": true,
+      "hasPassword": false
+    }
+  },
+  {
+    "name": "14. Failure Case: Invalid Login",
+    "passed": true,
+    "status": 401,
+    "detail": {
+      "statusCode": 401,
+      "timestamp": "2026-09-27T04:27:26.590Z",
+      "error": "Unauthorized",
+      "message": "Invalid email or password"
+    }
+  },
+  {
+    "name": "15. Failure Case: Missing JWT",
+    "passed": true,
+    "status": 401,
+    "detail": {
+      "statusCode": 401,
+      "timestamp": "2026-09-27T04:27:26.596Z",
+      "error": "Unauthorized",
+      "message": "Authentication credentials invalid or missing"
+    }
+  },
+  {
+    "name": "16. Failure Case: Invalid JWT",
+    "passed": true,
+    "status": 401,
+    "detail": {
+      "statusCode": 401,
+      "timestamp": "2026-09-27T04:27:26.601Z",
+      "error": "Unauthorized",
+      "message": "Authentication credentials invalid or missing"
+    }
+  },
+  {
+    "name": "17. Failure Case: Cross-User Access",
+    "passed": true,
+    "status": 403,
+    "detail": {
+      "statusCode": 403,
+      "timestamp": "2026-09-27T04:27:27.154Z",
+      "error": "Forbidden",
+      "message": "You do not have permission to access this document"
+    }
+  },
+  {
+    "name": "18. Failure Case: Invalid document ID",
+    "passed": true,
+    "status": 404,
+    "detail": {
+      "statusCode": 404,
+      "timestamp": "2026-09-27T04:27:27.164Z",
+      "error": "Not Found",
+      "message": "Document with ID \"00000000-0000-0000-0000-000000000000\" not found"
+    }
+  },
+  {
+    "name": "19. Failure Case: Invalid category ID",
+    "passed": true,
+    "status": 400,
+    "detail": {
+      "statusCode": 400,
+      "timestamp": "2026-09-27T04:27:27.175Z",
+      "error": "Bad Request",
+      "message": [
+        "Category ID must be a valid UUID"
+      ]
+    }
+  },
+  {
+    "name": "20. Failure Case: Invalid file type",
+    "passed": true,
+    "status": 400,
+    "detail": {
+      "statusCode": 400,
+      "timestamp": "2026-09-27T04:27:27.187Z",
+      "error": "Bad Request",
+      "message": "Unsupported MIME type \"application/x-msdownload\". Only PDF, JPEG, PNG, and WEBP are allowed."
+    }
+  },
+  {
+    "name": "21. DELETE /documents/:id",
+    "passed": true,
+    "status": 200,
+    "detail": {
+      "success": true,
+      "message": "Document permanently deleted"
+    }
+  }
+]
