@@ -2,12 +2,13 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../models/document.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/document_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/vault_popup.dart';
 
 enum UploadSource {
   scan,
@@ -45,10 +46,11 @@ class UploadDocumentSheet extends ConsumerStatefulWidget {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                   child: Row(
@@ -128,9 +130,10 @@ class UploadDocumentSheet extends ConsumerStatefulWidget {
               ],
             ),
           ),
-        );
-      },
-    );
+        ),
+      );
+    },
+  );
   }
 
   static Widget _buildOptionTile({
@@ -211,17 +214,37 @@ class _UploadDocumentSheetState extends ConsumerState<UploadDocumentSheet> {
   Future<void> _pickInitialFile() async {
     try {
       if (widget.initialSource == UploadSource.scan) {
-        // High contrast scanned simulated PDF document bytes
-        final samplePdfBytes = Uint8List.fromList(
-          '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000056 00000 n\n0000000115 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n190\n%%EOF'.codeUnits,
+        final picker = ImagePicker();
+        final XFile? photo = await picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 92,
         );
-        setState(() {
-          _fileBytes = samplePdfBytes;
-          _fileName = 'Scan_${DateTime.now().millisecondsSinceEpoch}.pdf';
-          _fileSize = samplePdfBytes.length;
-          _titleController.text = 'Scanned Document ${DateFormat('dd MMM').format(DateTime.now())}';
-          _documentType = 'PASSPORT';
-        });
+        if (photo == null) {
+          if (mounted && _fileBytes == null) {
+            Navigator.pop(context);
+          }
+          return;
+        }
+        final bytes = await photo.readAsBytes();
+        if (bytes.isEmpty) {
+          if (mounted) {
+            setState(() => _errorMessage = 'Captured photo was empty.');
+          }
+          return;
+        }
+        final fileName = photo.name.isNotEmpty
+            ? photo.name
+            : 'Scan_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        if (mounted) {
+          setState(() {
+            _fileBytes = bytes;
+            _fileName = fileName;
+            _fileSize = bytes.length;
+            _titleController.text = 'Scanned Document ${DateFormat('dd MMM').format(DateTime.now())}';
+            _documentType = 'CERTIFICATE';
+            _errorMessage = null;
+          });
+        }
         return;
       }
 
@@ -333,18 +356,10 @@ class _UploadDocumentSheetState extends ConsumerState<UploadDocumentSheet> {
       if (doc != null && mounted) {
         setState(() => _uploadProgress = 1.0);
         Navigator.pop(context, doc);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${doc.title} saved to Vault!'),
-            backgroundColor: AppTheme.accentGreen,
-            action: SnackBarAction(
-              label: 'Intelligence',
-              textColor: Colors.white,
-              onPressed: () {
-                context.push('/document-intelligence/${doc.id}', extra: doc);
-              },
-            ),
-          ),
+        VaultPopup.showSaved(
+          context,
+          document: doc,
+          duration: const Duration(seconds: 2),
         );
       }
     } catch (e) {

@@ -3,8 +3,11 @@ class AppConfig {
   static const String appTagline = 'Your Documents. Secured. Organized. Instantly Accessible.';
   
   // Connect to local NestJS backend
-  // For Android emulator 10.0.2.2 is host localhost, for Windows/web localhost is 127.0.0.1
-  static const String apiBaseUrl = 'http://127.0.0.1:4000';
-  static const Duration connectTimeout = Duration(seconds: 15);
+  // Primary is USB port reverse (127.0.0.1:4000), fallback is local Wi-Fi LAN (10.209.183.195:4000)
+  static String apiBaseUrl = 'http://127.0.0.1:4000';
+  static const String defaultUsbUrl = 'http://127.0.0.1:4000';
+  static const String fallbackLanUrl = 'http://10.209.183.195:4000';
+
+  static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 15);
 }

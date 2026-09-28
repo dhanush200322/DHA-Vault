@@ -101,6 +101,16 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
     }
   }
 
+  Future<bool> canAuthenticateWithBiometrics() async {
+    try {
+      final canCheck = await _localAuth.canCheckBiometrics;
+      final isSupported = await _localAuth.isDeviceSupported();
+      return canCheck || isSupported;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<bool> unlockWithBiometrics() async {
     final lockout = await _storage.getRemainingLockoutSeconds();
     if (lockout > 0) {
@@ -113,7 +123,7 @@ class SecurityNotifier extends StateNotifier<SecurityState> {
 
     try {
       final authenticated = await _localAuth.authenticate(
-        localizedReason: 'Authenticate to unlock DHA Vault',
+        localizedReason: 'Verify your identity to unlock DHA Vault',
         options: const AuthenticationOptions(
           stickyAuth: true,
           biometricOnly: true,

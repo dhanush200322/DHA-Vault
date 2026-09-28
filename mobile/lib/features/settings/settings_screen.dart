@@ -23,6 +23,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _checkHealth();
   }
 
+  Widget _buildAvatarFallback(dynamic user) {
+    final name = user?.fullName ?? user?.email ?? 'DHA';
+    final initial = (name is String && name.isNotEmpty) ? name[0].toUpperCase() : 'D';
+    return Container(
+      width: 56,
+      height: 56,
+      color: AppTheme.surfaceElevated,
+      alignment: Alignment.center,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: AppTheme.primaryLight,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
   Future<void> _checkHealth() async {
     final client = ref.read(apiClientProvider);
     try {
@@ -195,13 +214,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Row(
                 children: [
                   Container(
-                    width: 52,
-                    height: 52,
-                    decoration: const BoxDecoration(
-                      color: AppTheme.surfaceElevated,
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppTheme.primary.withValues(alpha: 0.5),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primary.withValues(alpha: 0.15),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.person, color: AppTheme.primaryLight, size: 28),
+                    child: ClipOval(
+                      child: (authState.user?.avatarUrl != null &&
+                              authState.user!.avatarUrl!.trim().isNotEmpty)
+                          ? Image.network(
+                              authState.user!.avatarUrl!,
+                              width: 56,
+                              height: 56,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildAvatarFallback(authState.user),
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  color: AppTheme.surfaceElevated,
+                                  alignment: Alignment.center,
+                                  child: const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppTheme.primaryLight,
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
+                          : _buildAvatarFallback(authState.user),
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -228,12 +284,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             // Hardware Security Section
             Text('SECURITY & LOCK', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
+            Material(
+              color: AppTheme.surface,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.border),
+                side: const BorderSide(color: AppTheme.border),
               ),
+              clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
                   ListTile(
@@ -290,12 +347,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             // Family Vault & Delegation Section
             Text('FAMILY VAULT & SECURE DELEGATION', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
+            Material(
+              color: AppTheme.surface,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.border),
+                side: const BorderSide(color: AppTheme.border),
               ),
+              clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
                   ListTile(
@@ -321,12 +379,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             // Cloud Sync & Devices Section
             Text('CLOUD SYNC & MULTI-DEVICE', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
+            Material(
+              color: AppTheme.surface,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.border),
+                side: const BorderSide(color: AppTheme.border),
               ),
+              clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
                   ListTile(
@@ -352,12 +411,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             // System Status
             Text('VAULT SYSTEM STATUS', style: Theme.of(context).textTheme.labelSmall),
             const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
+            Material(
+              color: AppTheme.surface,
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.border),
+                side: const BorderSide(color: AppTheme.border),
               ),
+              clipBehavior: Clip.antiAlias,
               child: Column(
                 children: [
                   ListTile(

@@ -14,8 +14,8 @@
     "passed": true,
     "status": 201,
     "detail": {
-      "userId": "a6ed3f1e-9321-4935-814b-1d7dcec98d4b",
-      "email": "dha_vault_owner_1790512272873@dhavault.io"
+      "userId": "9db82ad9-5638-4aad-b66e-c3161ece9849",
+      "email": "dha_vault_owner_1790562726955@dhavault.io"
     }
   },
   {
@@ -31,8 +31,8 @@
     "passed": true,
     "status": 200,
     "detail": {
-      "storagePath": "uploads/users/a6ed3f1e-9321-4935-814b-1d7dcec98d4b/documents/54410102-9a73-4152-b8bb-5e29ec0d23d5/69c14c43-060c-4d0b-9234-3bace26fe4f2.pdf",
-      "fileName": "69c14c43-060c-4d0b-9234-3bace26fe4f2.pdf",
+      "storagePath": "uploads/users/9db82ad9-5638-4aad-b66e-c3161ece9849/documents/4757a31c-e00a-499e-ad8b-e6c6308dc646/e3b2f0b5-0f94-4770-b192-06a3f74778ef.pdf",
+      "fileName": "e3b2f0b5-0f94-4770-b192-06a3f74778ef.pdf",
       "originalFileName": "Aadhaar_Official_2026.pdf",
       "fileSize": 285,
       "mimeType": "application/pdf",
@@ -45,7 +45,7 @@
     "passed": true,
     "status": 201,
     "detail": {
-      "id": "237ce527-5230-46f9-aaa5-f776dee570ac",
+      "id": "a4ffcdba-0713-4973-9cfa-7b09f48ca94d",
       "title": "National Aadhaar Identification Card"
     }
   },
@@ -99,10 +99,10 @@
       "totalStorageBytes": 285,
       "attentionRequired": [
         {
-          "id": "237ce527-5230-46f9-aaa5-f776dee570ac",
+          "id": "a4ffcdba-0713-4973-9cfa-7b09f48ca94d",
           "title": "National Aadhaar Identification Card",
           "documentType": "AADHAAR",
-          "expiryDate": "2026-10-12T12:31:13.432Z",
+          "expiryDate": "2026-10-13T02:32:08.184Z",
           "ocrStatus": "COMPLETED",
           "ocrConfidence": 0.9,
           "status": "EXPIRING_SOON"
@@ -110,56 +110,56 @@
       ],
       "categories": [
         {
-          "id": "6f215011-93bb-4fcd-945f-3a2bb23646db",
+          "id": "86b6ce1f-9081-4728-ba25-4708b4b106ac",
           "name": "Identity",
           "icon": "badge",
           "color": "#3B82F6",
           "count": 1
         },
         {
-          "id": "4fe0a5c2-c27c-4e4f-8d63-544aaa167092",
+          "id": "dc58b102-180b-4099-b2d5-ddd3abe171d1",
           "name": "Education",
           "icon": "school",
           "color": "#10B981",
           "count": 0
         },
         {
-          "id": "0a0af178-93a4-4e35-ae80-83378572bd7b",
+          "id": "9810ca4a-fb3d-402a-be12-776b4a6e44ec",
           "name": "Vehicle",
           "icon": "directions_car",
           "color": "#F59E0B",
           "count": 0
         },
         {
-          "id": "71d9eae8-0830-4ab0-a3d1-748d3ce3258a",
+          "id": "90055e55-a064-41e0-94f0-c8bbb05d7123",
           "name": "Finance",
           "icon": "account_balance",
           "color": "#8B5CF6",
           "count": 0
         },
         {
-          "id": "c3278219-03e2-44b2-a7c6-3400fb99cef7",
+          "id": "0c66bea0-d395-462d-b191-919ec59b5af5",
           "name": "Medical",
           "icon": "medical_services",
           "color": "#EF4444",
           "count": 0
         },
         {
-          "id": "837950a0-690c-4d14-a22e-2ca37f550180",
+          "id": "8266b130-c2b2-473b-9ff7-be1749a8cd72",
           "name": "Employment",
           "icon": "work",
           "color": "#06B6D4",
           "count": 0
         },
         {
-          "id": "8818ca13-9087-4995-89c9-932e1db5db58",
+          "id": "c227d48a-fe62-44a1-856d-9aaa7778aa64",
           "name": "Property",
           "icon": "home",
           "color": "#EC4899",
           "count": 0
         },
         {
-          "id": "58997371-1314-47a5-a2ee-eaff0547dd02",
+          "id": "b69cc6bd-6a8a-4c90-b692-6d0d74ec9891",
           "name": "Other",
           "icon": "folder",
           "color": "#6B7280",
@@ -190,7 +190,7 @@
     "passed": true,
     "status": 201,
     "detail": {
-      "token": "GGScCSsMQhqUp0jhSbAFY8Gs82UUotgX",
+      "token": "pt273yiHCD2MY52nH7vFKJ-hxvBVoWMA",
       "hasPassword": true
     }
   },
@@ -218,7 +218,7 @@
     "status": 401,
     "detail": {
       "statusCode": 401,
-      "timestamp": "2026-09-27T12:31:14.454Z",
+      "timestamp": "2026-09-28T02:32:09.606Z",
       "error": "Unauthorized",
       "message": "Invalid password for share link"
     }
@@ -229,7 +229,7 @@
     "status": 403,
     "detail": {
       "statusCode": 403,
-      "timestamp": "2026-09-27T12:31:14.596Z",
+      "timestamp": "2026-09-28T02:32:09.776Z",
       "error": "Forbidden",
       "message": "Maximum views for this share link exceeded"
     }
@@ -249,7 +249,7 @@
     "status": 404,
     "detail": {
       "statusCode": 404,
-      "timestamp": "2026-09-27T12:31:14.615Z",
+      "timestamp": "2026-09-28T02:32:09.821Z",
       "error": "Not Found",
       "message": "Share link is invalid or has been revoked"
     }
@@ -260,7 +260,7 @@
     "status": 403,
     "detail": {
       "statusCode": 403,
-      "timestamp": "2026-09-27T12:31:15.144Z",
+      "timestamp": "2026-09-28T02:32:10.400Z",
       "error": "Forbidden",
       "message": "You do not have permission to access this document"
     }
@@ -271,7 +271,7 @@
     "status": 403,
     "detail": {
       "statusCode": 403,
-      "timestamp": "2026-09-27T12:31:15.156Z",
+      "timestamp": "2026-09-28T02:32:10.416Z",
       "error": "Forbidden",
       "message": "You do not have permission to access this document"
     }
@@ -282,7 +282,7 @@
     "status": 400,
     "detail": {
       "statusCode": 400,
-      "timestamp": "2026-09-27T12:31:15.165Z",
+      "timestamp": "2026-09-28T02:32:10.430Z",
       "error": "Bad Request",
       "message": "Invalid PDF file signature (magic bytes mismatch)"
     }
@@ -293,7 +293,7 @@
     "status": 401,
     "detail": {
       "statusCode": 401,
-      "timestamp": "2026-09-27T12:31:15.168Z",
+      "timestamp": "2026-09-28T02:32:10.435Z",
       "error": "Unauthorized",
       "message": "Authentication credentials invalid or missing"
     }

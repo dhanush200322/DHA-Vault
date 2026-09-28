@@ -22,7 +22,7 @@ class UserModel {
       email: json['email'] as String,
       fullName: json['fullName'] as String? ?? profile?['fullName'] as String?,
       phone: profile?['phone'] as String?,
-      avatarUrl: profile?['avatarUrl'] as String?,
+      avatarUrl: (json['avatarUrl'] as String?) ?? (profile?['avatarUrl'] as String?),
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : DateTime.now(),

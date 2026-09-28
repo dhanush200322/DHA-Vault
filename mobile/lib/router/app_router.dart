@@ -24,8 +24,11 @@ import '../navigation/main_scaffold.dart';
 import '../providers/auth_provider.dart';
 import '../providers/security_provider.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     redirect: (BuildContext context, GoRouterState state) {
       final authState = ref.read(authProvider);

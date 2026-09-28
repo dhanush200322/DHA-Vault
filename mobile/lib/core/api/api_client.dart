@@ -29,6 +29,31 @@ class ApiClient {
           return handler.next(options);
         },
         onError: (DioException error, handler) async {
+          // Automatic resilient fallback if connection to active baseUrl fails
+          if ((error.type == DioExceptionType.connectionError ||
+               error.type == DioExceptionType.connectionTimeout) &&
+              error.requestOptions.extra['tried_network_fallback'] != true) {
+            final currentBase = error.requestOptions.baseUrl.isNotEmpty
+                ? error.requestOptions.baseUrl
+                : AppConfig.apiBaseUrl;
+            final altBase = (currentBase == AppConfig.defaultUsbUrl)
+                ? AppConfig.fallbackLanUrl
+                : AppConfig.defaultUsbUrl;
+
+            try {
+              final newOptions = error.requestOptions;
+              newOptions.extra['tried_network_fallback'] = true;
+              newOptions.baseUrl = altBase;
+              final retryResponse = await dio.fetch(newOptions);
+              // Fallback succeeded! Adopt this baseUrl for subsequent requests
+              AppConfig.apiBaseUrl = altBase;
+              dio.options.baseUrl = altBase;
+              return handler.resolve(retryResponse);
+            } catch (_) {
+              // Both endpoints attempted, proceed to normal error propagation
+            }
+          }
+
           // If 401 Unauthorized, attempt refresh token rotation
           if (error.response?.statusCode == 401 &&
               !error.requestOptions.path.contains('/auth/')) {

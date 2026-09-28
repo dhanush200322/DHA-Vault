@@ -10,7 +10,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../providers/document_provider.dart';
 import '../../theme/app_theme.dart';
-import '../sharing/secure_share_dialog.dart';
+import '../../services/native_share_service.dart';
 
 class DocumentDetailsScreen extends ConsumerStatefulWidget {
   final String documentId;
@@ -294,7 +294,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.share_outlined, color: AppTheme.primaryLight),
-            onPressed: () => SecureShareDialog.show(context, doc),
+            onPressed: () => NativeShareService.shareDocument(context, ref, doc),
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline, color: AppTheme.accentRed),
@@ -391,7 +391,7 @@ class _DocumentDetailsScreenState extends ConsumerState<DocumentDetailsScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => SecureShareDialog.show(context, doc),
+                    onPressed: () => NativeShareService.shareDocument(context, ref, doc),
                     icon: const Icon(Icons.share, size: 16),
                     label: const Text('Share'),
                   ),

@@ -14,6 +14,8 @@ import { AuditService, AuditAction } from '../audit/audit.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
+import { MailService } from '../mail/mail.service';
 
 const DEFAULT_CATEGORIES = [
   { name: 'Identity', icon: 'badge', color: '#3B82F6' },
@@ -35,6 +37,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly auditService: AuditService,
+    private readonly mailService: MailService,
   ) {}
 
   async register(dto: RegisterDto, ipAddress?: string, userAgent?: string) {
@@ -93,6 +96,17 @@ export class AuthService {
       userAgent,
       metadata: { method: 'registration' },
     });
+
+    // Send welcome email to genuinely new registered user
+    this.mailService
+      .sendWelcomeEmail({
+        userId: user.id,
+        email: user.email,
+        fullName: user.profile?.fullName,
+      })
+      .catch((err) => {
+        this.logger.error(`Welcome email dispatch error: ${err?.message || err}`);
+      });
 
     return {
       user: {
@@ -233,6 +247,165 @@ export class AuthService {
     return {
       success: true,
       message: 'Logged out successfully',
+    };
+  }
+
+  async googleLogin(dto: GoogleLoginDto, ipAddress?: string, userAgent?: string) {
+    let email = dto.email?.toLowerCase().trim();
+    let fullName = dto.fullName?.trim();
+    let avatarUrl = dto.avatarUrl;
+    let googleId = dto.googleId;
+
+    // If an idToken is provided, verify it directly with Google's tokeninfo endpoint
+    if (dto.idToken) {
+      try {
+        const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${dto.idToken}`);
+        if (!res.ok) {
+          throw new UnauthorizedException('Invalid Google ID token');
+        }
+        const data = await res.json();
+        const configuredClientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
+        const configuredAndroidClientId = this.configService.get<string>('GOOGLE_ANDROID_CLIENT_ID');
+        if (configuredClientId && data.aud !== configuredClientId && data.aud !== configuredAndroidClientId) {
+          this.logger.warn(`Google token aud mismatch: token aud is ${data.aud}, expected ${configuredClientId} or ${configuredAndroidClientId}`);
+        }
+        email = data.email?.toLowerCase().trim();
+        fullName = data.name || fullName;
+        avatarUrl = data.picture || avatarUrl;
+        googleId = data.sub || googleId;
+      } catch (err) {
+        this.logger.error(`Error verifying Google token: ${err.message}`);
+        throw new UnauthorizedException('Failed to verify Google token');
+      }
+    }
+
+    if (!email) {
+      throw new UnauthorizedException('Google authentication failed: Email address is required');
+    }
+
+    // Check if user already exists
+    let user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { profile: true },
+    });
+
+    if (!user) {
+      // Create new user account with secure random passwordHash
+      const randomPassword = crypto.randomBytes(32).toString('hex');
+      const passwordHash = await bcrypt.hash(randomPassword, 12);
+
+      user = await this.prisma.$transaction(async (tx) => {
+        const createdUser = await tx.user.create({
+          data: {
+            email,
+            passwordHash,
+            profile: {
+              create: {
+                fullName: fullName || email.split('@')[0],
+                avatarUrl: avatarUrl || null,
+              },
+            },
+            securitySettings: {
+              create: {},
+            },
+          },
+          include: {
+            profile: true,
+          },
+        });
+
+        // Seed default categories
+        for (const cat of DEFAULT_CATEGORIES) {
+          await tx.category.create({
+            data: {
+              userId: createdUser.id,
+              name: cat.name,
+              icon: cat.icon,
+              color: cat.color,
+              isSystem: true,
+            },
+          });
+        }
+
+        return createdUser;
+      });
+
+      this.logger.log(`Created new user via Google Sign-In: ${user.email}`);
+
+      // Send welcome email to first-time Google Sign-In user
+      this.mailService
+        .sendWelcomeEmail({
+          userId: user.id,
+          email: user.email,
+          fullName: user.profile?.fullName,
+          googleFullName: fullName,
+        })
+        .catch((err) => {
+          this.logger.error(`Google welcome email dispatch error: ${err?.message || err}`);
+        });
+    } else {
+      // Existing user: update avatar or name if available
+      if (fullName || avatarUrl) {
+        await this.prisma.profile.upsert({
+          where: { userId: user.id },
+          update: {
+            fullName: fullName || user.profile?.fullName,
+            avatarUrl: avatarUrl || user.profile?.avatarUrl,
+          },
+          create: {
+            userId: user.id,
+            fullName: fullName || email.split('@')[0],
+            avatarUrl: avatarUrl || null,
+          },
+        });
+      }
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('User account is deactivated');
+    }
+
+    // Optional device registration
+    if (dto.deviceId) {
+      await this.prisma.device.upsert({
+        where: {
+          userId_deviceId: {
+            userId: user.id,
+            deviceId: dto.deviceId,
+          },
+        },
+        update: {
+          lastActiveAt: new Date(),
+          deviceName: dto.deviceName || 'Android Device',
+        },
+        create: {
+          userId: user.id,
+          deviceId: dto.deviceId,
+          deviceName: dto.deviceName || 'Android Device',
+          platform: 'mobile',
+        },
+      });
+    }
+
+    const tokens = await this.generateTokens(user.id, user.email, dto.deviceId);
+
+    await this.auditService.log({
+      userId: user.id,
+      action: AuditAction.LOGIN,
+      ipAddress,
+      userAgent,
+      metadata: { method: 'google_oauth', googleId },
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.profile?.fullName || fullName || null,
+        avatarUrl: user.profile?.avatarUrl || avatarUrl || null,
+        createdAt: user.createdAt,
+      },
+      ...tokens,
     };
   }
 

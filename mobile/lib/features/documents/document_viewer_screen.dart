@@ -2,10 +2,11 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pdfrx/pdfrx.dart';
 import '../../models/document.dart';
 import '../../providers/document_provider.dart';
 import '../../theme/app_theme.dart';
-import '../sharing/secure_share_dialog.dart';
+import '../../services/native_share_service.dart';
 
 class DocumentViewerScreen extends ConsumerStatefulWidget {
   final String documentId;
@@ -114,7 +115,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
           ],
         ),
         actions: [
-          if (_doc != null)
+          if (_doc != null) ...[
             IconButton(
               icon: Icon(
                 _doc!.isFavorite ? Icons.star : Icons.star_border,
@@ -122,12 +123,18 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
               ),
               onPressed: _toggleFavorite,
             ),
+            IconButton(
+              icon: const Icon(Icons.share, color: Colors.white),
+              tooltip: 'Share',
+              onPressed: () => NativeShareService.shareDocument(context, ref, _doc!),
+            ),
+          ],
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.white),
             color: AppTheme.surfaceElevated,
             onSelected: (val) {
               if (val == 'share' && _doc != null) {
-                SecureShareDialog.show(context, _doc!);
+                NativeShareService.shareDocument(context, ref, _doc!);
               } else if (val == 'details' && _doc != null) {
                 context.push('/document-details/${_doc!.id}', extra: _doc);
               }
@@ -139,7 +146,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
                   children: [
                     Icon(Icons.share, size: 16, color: AppTheme.primaryLight),
                     SizedBox(width: 10),
-                    Text('Secure Share'),
+                    Text('Share'),
                   ],
                 ),
               ),
@@ -219,7 +226,7 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
                     label: 'Share',
                     color: AppTheme.primaryLight,
                     onTap: () {
-                      if (_doc != null) SecureShareDialog.show(context, _doc!);
+                      if (_doc != null) NativeShareService.shareDocument(context, ref, _doc!);
                     },
                   ),
                   _buildActionButton(
@@ -275,58 +282,29 @@ class _DocumentViewerScreenState extends ConsumerState<DocumentViewerScreen> {
   }
 
   Widget _buildPdfViewer() {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(24),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.border),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppTheme.accentRed.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.picture_as_pdf, size: 54, color: AppTheme.accentRed),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              _doc?.title ?? 'PDF Document',
+    if (_documentBytes == null || _documentBytes!.isEmpty) {
+      return const Center(
+        child: Text('No PDF content available', style: TextStyle(color: AppTheme.textMuted)),
+      );
+    }
+    return PdfViewer.data(
+      _documentBytes!,
+      sourceName: _doc?.title ?? 'document.pdf',
+      params: PdfViewerParams(
+        backgroundColor: AppTheme.background,
+        margin: 8,
+        errorBannerBuilder: (context, error, stackTrace, documentRef) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              'Error rendering PDF: $error',
+              style: const TextStyle(color: AppTheme.accentRed),
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 17),
             ),
-            const SizedBox(height: 8),
-            Text(
-              '${_doc?.formattedFileSize ?? ""} • Verified Cryptographic Hash',
-              style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppTheme.accentGreen.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppTheme.accentGreen.withValues(alpha: 0.3)),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.verified_user, color: AppTheme.accentGreen, size: 16),
-                  SizedBox(width: 8),
-                  Text(
-                    'Isolated RAM Decryption • No Disk Leaks',
-                    style: TextStyle(color: AppTheme.accentGreen, fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
+        ),
+        loadingBannerBuilder: (context, bytesDownloaded, totalBytes) => const Center(
+          child: CircularProgressIndicator(color: AppTheme.primaryLight),
         ),
       ),
     );

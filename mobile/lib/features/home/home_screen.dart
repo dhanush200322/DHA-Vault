@@ -437,7 +437,7 @@ class HomeScreen extends ConsumerWidget {
         const SizedBox(width: 10),
         _buildActionChip(
           icon: Icons.share_outlined,
-          label: 'Secure Share',
+          label: 'Share',
           color: AppTheme.accentPurple,
           onTap: () => context.go('/shared'),
         ),
@@ -795,55 +795,58 @@ class HomeScreen extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
+      child: Material(
         color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: ListTile(
-        onTap: () => context.push('/document-details/${doc.id}', extra: doc),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: isPdf
-                ? AppTheme.accentRed.withValues(alpha: 0.15)
-                : AppTheme.primary.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            isPdf ? Icons.picture_as_pdf : Icons.image,
-            color: isPdf ? AppTheme.accentRed : AppTheme.primaryLight,
-            size: 22,
-          ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: AppTheme.border),
         ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                doc.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          onTap: () => context.push('/document-details/${doc.id}', extra: doc),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          leading: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isPdf
+                  ? AppTheme.accentRed.withValues(alpha: 0.15)
+                  : AppTheme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
             ),
-            if (ocrBadge != null) ...[
-              const SizedBox(width: 6),
-              InkWell(
-                onTap: () => context.push('/document-intelligence/${doc.id}', extra: doc),
-                child: ocrBadge,
+            child: Icon(
+              isPdf ? Icons.picture_as_pdf : Icons.image,
+              color: isPdf ? AppTheme.accentRed : AppTheme.primaryLight,
+              size: 22,
+            ),
+          ),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  doc.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
               ),
+              if (ocrBadge != null) ...[
+                const SizedBox(width: 6),
+                InkWell(
+                  onTap: () => context.push('/document-intelligence/${doc.id}', extra: doc),
+                  child: ocrBadge,
+                ),
+              ],
             ],
-          ],
+          ),
+          subtitle: Text(
+            '${doc.formattedFileSize} • ${doc.category?.name ?? doc.documentType}',
+            style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
+          ),
+          trailing: doc.isFavorite
+              ? const Icon(Icons.star, color: AppTheme.accentAmber, size: 18)
+              : const Icon(Icons.chevron_right, color: AppTheme.textMuted, size: 18),
         ),
-        subtitle: Text(
-          '${doc.formattedFileSize} • ${doc.category?.name ?? doc.documentType}',
-          style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
-        ),
-        trailing: doc.isFavorite
-            ? const Icon(Icons.star, color: AppTheme.accentAmber, size: 18)
-            : const Icon(Icons.chevron_right, color: AppTheme.textMuted, size: 18),
       ),
     );
   }

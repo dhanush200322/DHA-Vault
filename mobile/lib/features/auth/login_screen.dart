@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/security_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/dha_vault_logo.dart';
+import '../../widgets/google_sign_in_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -30,13 +31,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final success = await ref.read(authProvider.notifier).login(
-          email: _emailController.text,
+          email: _emailController.text.trim(),
           password: _passwordController.text,
         );
 
     if (success && mounted) {
       ref.read(securityProvider.notifier).initialize();
       context.go('/home');
+    }
+  }
+
+  Future<void> _handleGoogleSignInFlow() async {
+    final nativeSuccess = await ref.read(authProvider.notifier).signInWithNativeGoogle();
+    if (nativeSuccess && mounted) {
+      await _proceedToBiometricAndVault();
+    }
+  }
+
+  Future<void> _proceedToBiometricAndVault() async {
+    final secNotifier = ref.read(securityProvider.notifier);
+    await secNotifier.initialize();
+    final canBio = await secNotifier.canAuthenticateWithBiometrics();
+    if (canBio) {
+      final bioSuccess = await secNotifier.unlockWithBiometrics();
+      if (bioSuccess && mounted) {
+        context.go('/home');
+      } else if (mounted) {
+        context.go('/unlock');
+      }
+    } else {
+      if (mounted) context.go('/home');
     }
   }
 
@@ -154,6 +178,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       : const Text('Unlock Vault'),
                 ),
                 const SizedBox(height: 20),
+                const Row(
+                  children: [
+                    Expanded(child: Divider(color: AppTheme.border)),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 14),
+                      child: Text(
+                        'OR CONTINUE WITH',
+                        style: TextStyle(
+                          color: AppTheme.textMuted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: AppTheme.border)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                GoogleSignInButton(
+                  text: 'Continue with Google',
+                  onPressed: _handleGoogleSignInFlow,
+                ),
+                const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

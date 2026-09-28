@@ -26,6 +26,7 @@ import { BackupModule } from './backup/backup.module';
 import { FamilyModule } from './family/family.module';
 import { EmergencyModule } from './emergency/emergency.module';
 import { RecoveryModule } from './recovery/recovery.module';
+import { MailModule } from './mail/mail.module';
 
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -65,6 +66,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
     FamilyModule,
     EmergencyModule,
     RecoveryModule,
+    MailModule,
   ],
   providers: [
     {
