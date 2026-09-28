@@ -7,15 +7,133 @@ import '../../providers/category_provider.dart';
 import '../../providers/document_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/sync_provider.dart';
+import '../../core/storage/secure_vault_storage.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/coach_marks/coach_mark_model.dart';
+import '../../widgets/coach_marks/coach_mark_overlay.dart';
 import '../../widgets/dha_vault_logo.dart';
 import '../documents/upload_document_sheet.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final _storage = SecureVaultStorage();
+  final _scrollController = ScrollController();
+
+  final _addFileKey = GlobalKey();
+  final _scanKey = GlobalKey();
+  final _shareKey = GlobalKey();
+  final _searchKey = GlobalKey();
+  final _recentDocsKey = GlobalKey();
+
+  OverlayEntry? _coachMarkOverlay;
+  bool _tourChecked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkFirstTimeTour();
+    });
+  }
+
+  @override
+  void dispose() {
+    _hideCoachMarks();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkFirstTimeTour() async {
+    if (!mounted || _tourChecked) return;
+    _tourChecked = true;
+
+    final userId = ref.read(authProvider).user?.id ?? 'default';
+    final completed = await _storage.isCoachMarksCompleted(userId);
+
+    if (!completed && mounted) {
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (mounted) {
+        _startCoachMarks(userId);
+      }
+    }
+  }
+
+  void _startCoachMarks(String userId) {
+    _hideCoachMarks();
+
+    final steps = [
+      CoachMarkStep(
+        title: 'Add File',
+        description: 'Upload PDFs, images, or documents to your secure vault.',
+        targetKey: _addFileKey,
+        position: CoachMarkPosition.below,
+        targetPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        borderRadius: 14,
+      ),
+      CoachMarkStep(
+        title: 'Scan Document',
+        description: 'Scan physical documents with your camera and save them directly to your vault.',
+        targetKey: _scanKey,
+        position: CoachMarkPosition.below,
+        targetPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        borderRadius: 14,
+      ),
+      CoachMarkStep(
+        title: 'Share',
+        description: 'Share your documents directly through apps installed on your phone.',
+        targetKey: _shareKey,
+        position: CoachMarkPosition.below,
+        targetPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        borderRadius: 14,
+      ),
+      CoachMarkStep(
+        title: 'Search',
+        description: 'Find your documents quickly using names, details, and document information.',
+        targetKey: _searchKey,
+        position: CoachMarkPosition.below,
+        targetPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        borderRadius: 14,
+      ),
+      CoachMarkStep(
+        title: 'Your Documents',
+        description: 'Quickly access your recently added documents from your vault.',
+        targetKey: _recentDocsKey,
+        position: CoachMarkPosition.below,
+        targetPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        borderRadius: 14,
+      ),
+    ];
+
+    _coachMarkOverlay = OverlayEntry(
+      builder: (context) => CoachMarkOverlay(
+        steps: steps,
+        onFinish: () async {
+          _hideCoachMarks();
+          await _storage.setCoachMarksCompleted(userId);
+        },
+        onSkip: () async {
+          _hideCoachMarks();
+          await _storage.setCoachMarksCompleted(userId);
+        },
+      ),
+    );
+
+    Overlay.of(context).insert(_coachMarkOverlay!);
+  }
+
+  void _hideCoachMarks() {
+    _coachMarkOverlay?.remove();
+    _coachMarkOverlay = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final statsAsync = ref.watch(vaultStatsProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
@@ -163,25 +281,29 @@ class HomeScreen extends ConsumerWidget {
           ref.invalidate(recentlyViewedDocumentsProvider);
         },
         child: SingleChildScrollView(
+          controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Search Input -> navigates to DocumentsScreen with search
-              TextField(
-                onSubmitted: (val) {
-                  ref.read(documentFilterProvider.notifier).update(
-                        (state) => state.copyWith(searchQuery: val),
-                      );
-                  context.go('/documents');
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search documents, types, or categories...',
-                  prefixIcon: const Icon(Icons.search, color: AppTheme.textMuted, size: 20),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.tune, color: AppTheme.textMuted, size: 18),
-                    onPressed: () => context.go('/documents'),
+              Container(
+                key: _searchKey,
+                child: TextField(
+                  onSubmitted: (val) {
+                    ref.read(documentFilterProvider.notifier).update(
+                          (state) => state.copyWith(searchQuery: val),
+                        );
+                    context.go('/documents');
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search documents, types, or categories...',
+                    prefixIcon: const Icon(Icons.search, color: AppTheme.textMuted, size: 20),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.tune, color: AppTheme.textMuted, size: 18),
+                      onPressed: () => context.go('/documents'),
+                    ),
                   ),
                 ),
               ),
@@ -263,21 +385,25 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // Recently Viewed Documents Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.history, color: AppTheme.primaryLight, size: 18),
-                      const SizedBox(width: 6),
-                      Text('Recently Viewed', style: Theme.of(context).textTheme.titleLarge),
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: () => context.go('/documents'),
-                    child: const Text('See All', style: TextStyle(color: AppTheme.primaryLight, fontSize: 13)),
-                  ),
-                ],
+              Container(
+                key: _recentDocsKey,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.history, color: AppTheme.primaryLight, size: 18),
+                        const SizedBox(width: 6),
+                        Text('Recently Viewed', style: Theme.of(context).textTheme.titleLarge),
+                      ],
+                    ),
+                    TextButton(
+                      onPressed: () => context.go('/documents'),
+                      child: const Text('See All', style: TextStyle(color: AppTheme.primaryLight, fontSize: 13)),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               recentAsync.when(
@@ -422,6 +548,7 @@ class HomeScreen extends ConsumerWidget {
     return Row(
       children: [
         _buildActionChip(
+          key: _addFileKey,
           icon: Icons.add_photo_alternate_outlined,
           label: 'Add File',
           color: AppTheme.primary,
@@ -429,13 +556,15 @@ class HomeScreen extends ConsumerWidget {
         ),
         const SizedBox(width: 10),
         _buildActionChip(
+          key: _scanKey,
           icon: Icons.document_scanner,
-          label: 'Scan Card',
+          label: 'Scan Document',
           color: AppTheme.accentGreen,
           onTap: () => UploadDocumentSheet.show(context, UploadSource.scan),
         ),
         const SizedBox(width: 10),
         _buildActionChip(
+          key: _shareKey,
           icon: Icons.share_outlined,
           label: 'Share',
           color: AppTheme.accentPurple,
@@ -446,31 +575,35 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildActionChip({
+    Key? key,
     required IconData icon,
     required String label,
     required Color color,
     required VoidCallback onTap,
   }) {
     return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withValues(alpha: 0.3)),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: color, size: 22),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
-              ),
-            ],
+      child: Container(
+        key: key,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              children: [
+                Icon(icon, color: color, size: 22),
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+                ),
+              ],
+            ),
           ),
         ),
       ),

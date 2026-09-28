@@ -223,4 +223,31 @@ class SecureVaultStorage {
       return null;
     }
   }
+
+  // First-time Home Coach Marks persistence
+  static const _keyCoachMarksCompletedPrefix = 'dha_vault_home_coach_marks_completed_';
+
+  Future<void> setCoachMarksCompleted(String userId) async {
+    try {
+      final key = '$_keyCoachMarksCompletedPrefix${userId.isNotEmpty ? userId : "default"}';
+      await _storage.write(key: key, value: 'true');
+    } catch (_) {}
+  }
+
+  Future<bool> isCoachMarksCompleted(String userId) async {
+    try {
+      final key = '$_keyCoachMarksCompletedPrefix${userId.isNotEmpty ? userId : "default"}';
+      final val = await _storage.read(key: key);
+      return val == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> resetCoachMarks(String userId) async {
+    try {
+      final key = '$_keyCoachMarksCompletedPrefix${userId.isNotEmpty ? userId : "default"}';
+      await _storage.delete(key: key);
+    } catch (_) {}
+  }
 }

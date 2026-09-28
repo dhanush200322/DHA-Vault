@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../core/storage/secure_vault_storage.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/security_provider.dart';
 import '../../theme/app_theme.dart';
@@ -436,6 +437,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       'Isolated Local / S3 Ready',
                       style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                     ),
+                  ),
+                  const Divider(color: AppTheme.border, height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.explore_outlined, color: AppTheme.primaryLight),
+                    title: const Text('Replay Feature Tour', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                    subtitle: const Text('View the interactive guide for DHA Vault features', style: TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                    trailing: const Icon(Icons.chevron_right, color: AppTheme.textMuted, size: 18),
+                    onTap: () async {
+                      final userId = ref.read(authProvider).user?.id ?? 'default';
+                      await SecureVaultStorage().resetCoachMarks(userId);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Feature tour reset! Opening Home...'),
+                            duration: Duration(seconds: 2),
+                            backgroundColor: Color(0xFF1E293B),
+                          ),
+                        );
+                        Future.delayed(const Duration(milliseconds: 500), () {
+                          if (context.mounted) context.go('/home');
+                        });
+                      }
+                    },
                   ),
                 ],
               ),
