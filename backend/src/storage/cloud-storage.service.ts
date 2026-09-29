@@ -32,27 +32,37 @@ export class CloudStorageService implements IStorageService {
   private readonly isConfigured: boolean;
 
   constructor(private readonly configService: ConfigService) {
-    const endpoint = this.configService.get<string>('S3_ENDPOINT');
-    const region = this.configService.get<string>('S3_REGION', 'us-east-1');
-    const accessKeyId = this.configService.get<string>('S3_ACCESS_KEY');
-    const secretAccessKey = this.configService.get<string>('S3_SECRET_KEY');
-    this.bucketName = this.configService.get<string>('S3_BUCKET', 'dha-vault-private');
+    const endpoint =
+      this.configService.get<string>('R2_ENDPOINT') ||
+      this.configService.get<string>('S3_ENDPOINT');
+    const region =
+      this.configService.get<string>('R2_REGION') ||
+      this.configService.get<string>('S3_REGION', 'auto');
+    const accessKeyId =
+      this.configService.get<string>('R2_ACCESS_KEY_ID') ||
+      this.configService.get<string>('S3_ACCESS_KEY');
+    const secretAccessKey =
+      this.configService.get<string>('R2_SECRET_ACCESS_KEY') ||
+      this.configService.get<string>('S3_SECRET_KEY');
+    this.bucketName =
+      this.configService.get<string>('R2_BUCKET_NAME') ||
+      this.configService.get<string>('S3_BUCKET', 'dha-vault-private');
 
     if (accessKeyId && secretAccessKey) {
       this.s3Client = new S3Client({
         region,
         endpoint: endpoint || undefined,
-        forcePathStyle: !!endpoint, // MinIO / local S3 compatibility
+        forcePathStyle: !!endpoint, // Cloudflare R2 / MinIO compatibility
         credentials: {
           accessKeyId,
           secretAccessKey,
         },
       });
       this.isConfigured = true;
-      this.logger.log(`Initialized S3-compatible cloud storage driver (bucket: ${this.bucketName})`);
+      this.logger.log(`Initialized S3/R2 cloud storage driver (bucket: ${this.bucketName})`);
     } else {
       this.isConfigured = false;
-      this.logger.warn('Cloud storage credentials (S3_ACCESS_KEY / S3_SECRET_KEY) not provided. S3 driver dormant.');
+      this.logger.warn('Cloud storage credentials (R2/S3 access keys) not provided. S3 driver dormant.');
     }
   }
 

@@ -21,12 +21,15 @@ export class StorageService implements IStorageService {
     private readonly localDriver: LocalStorageService,
     private readonly cloudDriver: CloudStorageService,
   ) {
-    const provider = this.configService.get<string>('STORAGE_PROVIDER', 'local').toLowerCase();
+    const provider = (
+      this.configService.get<string>('STORAGE_PROVIDER') ||
+      this.configService.get<string>('STORAGE_DRIVER', 'local')
+    ).toLowerCase();
     this.providerName = provider;
 
-    if (provider === 's3') {
+    if (provider === 's3' || provider === 'r2') {
       this.activeDriver = this.cloudDriver;
-      this.logger.log('Active storage provider: CloudStorageService (S3-compatible)');
+      this.logger.log('Active storage provider: CloudStorageService (S3/Cloudflare R2)');
     } else {
       this.activeDriver = this.localDriver;
       this.logger.log('Active storage provider: LocalStorageService (Local Private)');

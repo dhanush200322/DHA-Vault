@@ -256,7 +256,12 @@ export class AuthService {
     let avatarUrl = dto.avatarUrl;
     let googleId = dto.googleId;
 
-    // If an idToken is provided, verify it directly with Google's tokeninfo endpoint
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    if (isProduction && !dto.idToken) {
+      throw new UnauthorizedException('Google ID token is required for authentication in production');
+    }
+
+    // Verify Google ID token directly with Google's tokeninfo endpoint
     if (dto.idToken) {
       try {
         const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${dto.idToken}`);
@@ -269,13 +274,16 @@ export class AuthService {
         if (configuredClientId && data.aud !== configuredClientId && data.aud !== configuredAndroidClientId) {
           this.logger.warn(`Google token aud mismatch: token aud is ${data.aud}, expected ${configuredClientId} or ${configuredAndroidClientId}`);
         }
-        email = data.email?.toLowerCase().trim();
+        if (!data.email) {
+          throw new UnauthorizedException('Google ID token does not contain a valid email address');
+        }
+        email = data.email.toLowerCase().trim();
         fullName = data.name || fullName;
         avatarUrl = data.picture || avatarUrl;
         googleId = data.sub || googleId;
-      } catch (err) {
+      } catch (err: any) {
         this.logger.error(`Error verifying Google token: ${err.message}`);
-        throw new UnauthorizedException('Failed to verify Google token');
+        throw new UnauthorizedException(err.message || 'Failed to verify Google token');
       }
     }
 
@@ -330,20 +338,23 @@ export class AuthService {
         return createdUser;
       });
 
-      this.logger.log(`Created new user via Google Sign-In: ${user.email}`);
+      this.logger.log('Google authentication successful.');
+      this.logger.log('New user detected.');
+      this.logger.log(`Welcome email queued for: ${user.email}`);
 
-      // Send welcome email to first-time Google Sign-In user
+      // Dispatch welcome email ONLY for genuine new Google users
       this.mailService
         .sendWelcomeEmail({
           userId: user.id,
           email: user.email,
-          fullName: user.profile?.fullName,
+          fullName: user.profile?.fullName || fullName,
           googleFullName: fullName,
         })
         .catch((err) => {
           this.logger.error(`Google welcome email dispatch error: ${err?.message || err}`);
         });
     } else {
+      this.logger.log(`Google authentication successful. Existing user: ${user.email}`);
       // Existing user: update avatar or name if available
       if (fullName || avatarUrl) {
         await this.prisma.profile.upsert({

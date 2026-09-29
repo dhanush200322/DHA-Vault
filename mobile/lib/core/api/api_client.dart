@@ -29,8 +29,9 @@ class ApiClient {
           return handler.next(options);
         },
         onError: (DioException error, handler) async {
-          // Automatic resilient fallback if connection to active baseUrl fails
-          if ((error.type == DioExceptionType.connectionError ||
+          // Automatic resilient fallback if connection to active baseUrl fails (development only)
+          if (!AppConfig.isProduction &&
+              (error.type == DioExceptionType.connectionError ||
                error.type == DioExceptionType.connectionTimeout) &&
               error.requestOptions.extra['tried_network_fallback'] != true) {
             final currentBase = error.requestOptions.baseUrl.isNotEmpty

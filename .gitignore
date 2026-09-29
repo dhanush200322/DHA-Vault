@@ -51,3 +51,12 @@ mobile/ios/Flutter/Generated.xcconfig
 mobile/ios/Flutter/flutter_export_environment.sh
 mobile/android/local.properties
 mobile/android/.gradle/
+
+# Android Release Keystore & Secrets
+*.jks
+*.keystore
+key.properties
+**/key.properties
+mobile/android/key.properties
+!key.properties.example
+

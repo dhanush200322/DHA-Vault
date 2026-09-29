@@ -1,0 +1,11 @@
+# DHA Vault Android Keystore Release Configuration Template
+# Copy this file to: mobile/android/key.properties (DO NOT COMMIT key.properties to git!)
+#
+# Generate your keystore with:
+# keytool -genkey -v -keystore mobile/android/app/dha-vault-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias dhavault
+#
+# Fill in your values below:
+storePassword=YourKeystorePasswordHere
+keyPassword=YourKeyPasswordHere
+keyAlias=dhavault
+storeFile=dha-vault-release.jks

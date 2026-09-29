@@ -182,9 +182,15 @@ export class MailService implements OnModuleInit {
       }
 
       if (!this.transporter) {
+        this.initTransporter();
+      }
+
+      if (!this.transporter) {
         this.logger.warn('SMTP transporter not configured. Cannot deliver welcome email.');
         return { success: false, error: 'SMTP transporter not configured' };
       }
+
+      this.logger.log(`Dispatching welcome email to ${email} (userId: ${userId})`);
 
       const name = this.resolveDisplayName({
         fullName: options.fullName,
@@ -208,6 +214,7 @@ export class MailService implements OnModuleInit {
       const info = await this.transporter.sendMail({
         from: `"${fromName}" <${fromEmail}>`,
         to: email,
+        replyTo: fromEmail,
         subject,
         text: textBody,
         html: htmlBody,

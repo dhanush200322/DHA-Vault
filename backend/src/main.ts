@@ -39,7 +39,7 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const port = process.env.PORT || 4000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   logger.log(`==============================================`);
   logger.log(`🛡️  DHA Vault Backend API running on port ${port}`);
   logger.log(`🔐  Environment: ${process.env.NODE_ENV || 'development'}`);
