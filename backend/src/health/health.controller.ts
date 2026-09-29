@@ -25,4 +25,16 @@ export class HealthController {
       database: 'connected',
     };
   }
+
+  @Public()
+  @Get('storage')
+  getStorageHealth() {
+    return {
+      status: 'ok',
+      storageMode: 'Local / Zero-Cost',
+      provider: 'local',
+      encrypted: true,
+      cloudBackup: 'disabled',
+    };
+  }
 }

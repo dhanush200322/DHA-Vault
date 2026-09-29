@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/api/api_endpoints.dart';
+import '../core/storage/local_document_storage.dart';
 import '../models/document.dart';
 import '../models/document_version.dart';
 import 'auth_provider.dart';
@@ -308,7 +309,17 @@ class DocumentService {
       final doc = DocumentModel.fromJson(createRes.data);
       FastViewCache.instance.putMetadata(doc);
       // Cache the uploaded bytes directly for instant preview!
-      FastViewCache.instance.putPreviewBytes(doc.id, Uint8List.fromList(fileBytes));
+      final bytes = Uint8List.fromList(fileBytes);
+      FastViewCache.instance.putPreviewBytes(doc.id, bytes);
+
+      // Persist AES-256-GCM encrypted document into device-local private storage
+      try {
+        final localStorage = ref.read(localDocumentStorageProvider);
+        await localStorage.saveDocument(
+          documentId: doc.id,
+          plaintextBytes: bytes,
+        );
+      } catch (_) {}
 
       ref.invalidate(documentsListProvider);
       ref.invalidate(vaultStatsProvider);
@@ -384,6 +395,10 @@ class DocumentService {
     final apiClient = ref.read(apiClientProvider);
     final res = await apiClient.dio.delete(ApiEndpoints.document(documentId));
     if (res.statusCode == 200) {
+      try {
+        final localStorage = ref.read(localDocumentStorageProvider);
+        await localStorage.deleteDocument(documentId);
+      } catch (_) {}
       ref.invalidate(documentsListProvider);
       ref.invalidate(vaultStatsProvider);
       ref.invalidate(recentlyViewedDocumentsProvider);
@@ -393,11 +408,21 @@ class DocumentService {
   }
 
   Future<Uint8List?> fetchPreviewBytes(String documentId) async {
-    // 1. Check Fast View cache
+    // 1. Check Fast View cache (RAM)
     final cached = FastViewCache.instance.getPreviewBytes(documentId);
     if (cached != null) return cached;
 
-    // 2. Fetch authenticated stream from preview endpoint
+    // 2. Check Local-First Encrypted Vault Storage on device (Zero-Cost Local-First!)
+    final localStorage = ref.read(localDocumentStorageProvider);
+    try {
+      if (await localStorage.documentExists(documentId)) {
+        final decryptedBytes = await localStorage.readDocument(documentId);
+        FastViewCache.instance.putPreviewBytes(documentId, decryptedBytes);
+        return decryptedBytes;
+      }
+    } catch (_) {}
+
+    // 3. Fallback to authenticated stream from preview endpoint (if available)
     final apiClient = ref.read(apiClientProvider);
     try {
       final res = await apiClient.dio.get<List<int>>(
@@ -407,6 +432,13 @@ class DocumentService {
       if (res.statusCode == 200 && res.data != null) {
         final bytes = Uint8List.fromList(res.data!);
         FastViewCache.instance.putPreviewBytes(documentId, bytes);
+        // Persist locally for instant offline Fast View next time
+        try {
+          await localStorage.saveDocument(
+            documentId: documentId,
+            plaintextBytes: bytes,
+          );
+        } catch (_) {}
         return bytes;
       }
     } catch (_) {}
@@ -506,5 +538,9 @@ class DocumentService {
 
 final documentServiceProvider = Provider<DocumentService>((ref) {
   return DocumentService(ref);
+});
+
+final localDocumentStorageProvider = Provider<LocalDocumentStorage>((ref) {
+  return LocalDocumentStorage();
 });
 

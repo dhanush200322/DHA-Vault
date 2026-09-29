@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../providers/family_provider.dart';
 import '../../providers/document_provider.dart';
 import '../../theme/app_theme.dart';
@@ -157,62 +158,111 @@ class _FamilyVaultScreenState extends ConsumerState<FamilyVaultScreen>
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: docs.length,
-      itemBuilder: (context, index) {
-        final item = docs[index];
-        final doc = item.document;
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceElevated,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: AppTheme.border),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.info_outline, size: 18, color: AppTheme.accentAmber),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Zero-Cost Mode: Shared document metadata is maintained in PostgreSQL. Actual files remain encrypted on the member\'s local device.',
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final item = docs[index];
+              final doc = item.document;
 
-        return Card(
-          color: AppTheme.surface,
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppTheme.border),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(12),
-            leading: CircleAvatar(
-              backgroundColor: AppTheme.accentAmber.withValues(alpha: 0.15),
-              child: const Icon(Icons.description_rounded, color: AppTheme.accentAmber),
-            ),
-            title: Text(
-              doc?.title ?? 'Document',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text(
-                  'Shared by: ${item.sharedByEmail}',
-                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+              return Card(
+                color: AppTheme.surface,
+                margin: const EdgeInsets.only(bottom: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppTheme.border),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: item.permissions.map((p) => Container(
-                    margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.white10,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(p, style: const TextStyle(color: Colors.white70, fontSize: 10)),
-                  )).toList(),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(12),
+                  leading: CircleAvatar(
+                    backgroundColor: AppTheme.accentAmber.withValues(alpha: 0.15),
+                    child: const Icon(Icons.description_rounded, color: AppTheme.accentAmber),
+                  ),
+                  title: Text(
+                    doc?.title ?? 'Document',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text(
+                        'Shared by: ${item.sharedByEmail}',
+                        style: const TextStyle(color: Colors.white60, fontSize: 12),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: item.permissions.map((p) => Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white10,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(p, style: const TextStyle(color: Colors.white70, fontSize: 10)),
+                        )).toList(),
+                      ),
+                    ],
+                  ),
+                  onTap: () async {
+                    if (doc == null) return;
+                    final localStorage = ref.read(localDocumentStorageProvider);
+                    final exists = await localStorage.documentExists(doc.id);
+                    if (exists && context.mounted) {
+                      context.push('/documents/${doc.id}');
+                    } else if (context.mounted) {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: AppTheme.surface,
+                          title: const Text('Zero-Cost Local Document'),
+                          content: Text(
+                            'Document "${doc.title}" is stored locally on the sharing member\'s device (${item.sharedByEmail}).\n\nIn Zero-Cost Mode, cross-device file transfer requires cloud storage or direct export using native Android Share Sheet.',
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
+                          ],
+                        ),
+                      );
+                    }
+                  },
+                  trailing: state.activeFamily?.isOwner == true
+                      ? IconButton(
+                          icon: const Icon(Icons.remove_circle_outline, color: AppTheme.accentRed),
+                          tooltip: 'Revoke Access',
+                          onPressed: () => _confirmRevokeDoc(context, state.activeFamily!.id, doc?.id ?? ''),
+                        )
+                      : null,
                 ),
-              ],
-            ),
-            trailing: state.activeFamily?.isOwner == true
-                ? IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, color: AppTheme.accentRed),
-                    tooltip: 'Revoke Access',
-                    onPressed: () => _confirmRevokeDoc(context, state.activeFamily!.id, doc?.id ?? ''),
-                  )
-                : null,
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 

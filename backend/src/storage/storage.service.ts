@@ -21,23 +21,41 @@ export class StorageService implements IStorageService {
     private readonly localDriver: LocalStorageService,
     private readonly cloudDriver: CloudStorageService,
   ) {
-    const provider = (
+    const rawMode = (
+      this.configService.get<string>('STORAGE_MODE') ||
       this.configService.get<string>('STORAGE_PROVIDER') ||
       this.configService.get<string>('STORAGE_DRIVER', 'local')
     ).toLowerCase();
-    this.providerName = provider;
 
-    if (provider === 's3' || provider === 'r2') {
+    if (rawMode === 'local_only' || rawMode === 'local' || rawMode === 'zero_cost') {
+      this.providerName = 'local';
+      this.activeDriver = this.localDriver;
+      this.logger.log('Active storage provider: LocalStorageService (Zero-Cost Local-First Mode)');
+    } else if (rawMode === 's3' || rawMode === 'r2') {
+      this.providerName = rawMode;
       this.activeDriver = this.cloudDriver;
       this.logger.log('Active storage provider: CloudStorageService (S3/Cloudflare R2)');
     } else {
+      this.providerName = 'local';
       this.activeDriver = this.localDriver;
-      this.logger.log('Active storage provider: LocalStorageService (Local Private)');
+      this.logger.log('Active storage provider: LocalStorageService (Local Private Default)');
     }
   }
 
   getProviderName(): string {
     return this.providerName;
+  }
+
+  getStorageMode(): string {
+    return this.providerName === 'local' ? 'Local / Zero-Cost' : 'Cloud';
+  }
+
+  getStorageStatus(): { mode: string; provider: string; encrypted: boolean } {
+    return {
+      mode: this.getStorageMode(),
+      provider: this.providerName,
+      encrypted: true,
+    };
   }
 
   async upload(options: UploadFileOptions): Promise<StoredFileResult> {

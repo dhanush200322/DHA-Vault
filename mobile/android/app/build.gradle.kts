@@ -8,8 +8,12 @@ plugins {
 }
 
 val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
+val keystorePropertiesFile = when {
+    rootProject.file("key.properties").exists() -> rootProject.file("key.properties")
+    project.file("key.properties").exists() -> project.file("key.properties")
+    else -> null
+}
+if (keystorePropertiesFile != null && keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
@@ -42,8 +46,14 @@ android {
                 !keyPasswordProp.isNullOrBlank() &&
                 !storeFileProp.isNullOrBlank() &&
                 !storePasswordProp.isNullOrBlank()) {
-                val resolvedStore = file(storeFileProp)
-                if (resolvedStore.exists()) {
+                val resolvedStore = when {
+                    file(storeFileProp).exists() -> file(storeFileProp)
+                    file("app/$storeFileProp").exists() -> file("app/$storeFileProp")
+                    rootProject.file(storeFileProp).exists() -> rootProject.file(storeFileProp)
+                    rootProject.file("app/$storeFileProp").exists() -> rootProject.file("app/$storeFileProp")
+                    else -> null
+                }
+                if (resolvedStore != null && resolvedStore.exists()) {
                     keyAlias = keyAliasProp
                     keyPassword = keyPasswordProp
                     storeFile = resolvedStore

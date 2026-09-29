@@ -282,15 +282,42 @@ class _EmergencyAccessScreenState extends ConsumerState<EmergencyAccessScreen> w
                         ),
                       ),
                     )
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: state.delegations.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final item = state.delegations[index];
-                        final isOwner = item.ownerEmail == myEmail;
-                        return _buildEmergencyCard(context, item, isOwner);
-                      },
+                  : Column(
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceElevated,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: AppTheme.border),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.info_outline, size: 18, color: AppTheme.accentGreen),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Zero-Cost Mode: Emergency access delegations & time-locks are secured in Render PostgreSQL. Actual document binaries reside on the device.',
+                                  style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: state.delegations.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final item = state.delegations[index];
+                              final isOwner = item.ownerEmail == myEmail;
+                              return _buildEmergencyCard(context, item, isOwner);
+                            },
+                          ),
+                        ),
+                      ],
                     ),
 
           // Tab 2: Recovery Delegation
