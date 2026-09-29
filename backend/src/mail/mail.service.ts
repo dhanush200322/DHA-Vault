@@ -271,6 +271,10 @@ export class MailService implements OnModuleInit {
         messageId = data?.messageId || `brevo-${Date.now()}`;
       } else if (resendKey) {
         this.logger.log(`Dispatching welcome email via Resend HTTPS API to ${email}`);
+        const configuredResendFrom = this.configService.get<string>('RESEND_FROM_EMAIL');
+        const resendFrom = configuredResendFrom
+          ? (configuredResendFrom.includes('<') ? configuredResendFrom : `"${fromName}" <${configuredResendFrom}>`)
+          : 'DHA Vault <onboarding@resend.dev>';
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -278,7 +282,7 @@ export class MailService implements OnModuleInit {
             Authorization: `Bearer ${resendKey}`,
           },
           body: JSON.stringify({
-            from: `${fromName} <${fromEmail}>`,
+            from: resendFrom,
             to: email,
             subject,
             html: htmlBody,
