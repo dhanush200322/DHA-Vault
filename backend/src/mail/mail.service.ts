@@ -275,7 +275,8 @@ export class MailService implements OnModuleInit {
         const resendFrom = configuredResendFrom
           ? (configuredResendFrom.includes('<') ? configuredResendFrom : `"${fromName}" <${configuredResendFrom}>`)
           : 'DHA Vault <onboarding@resend.dev>';
-        const res = await fetch('https://api.resend.com/emails', {
+
+        let res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -289,6 +290,33 @@ export class MailService implements OnModuleInit {
             text: textBody,
           }),
         });
+
+        // If Resend restricts to account owner in sandbox mode (unverified domain):
+        if (!res.ok && res.status === 403) {
+          const errText = await res.text();
+          if (errText.includes('only send testing emails to your own email address')) {
+            const ownerEmail = this.configService.get<string>('SMTP_USER', 'ro224313@gmail.com');
+            this.logger.warn(`Resend sandbox restriction: domain unverified. Routing preview welcome email to verified owner: ${ownerEmail} for user ${email}`);
+
+            res = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${resendKey}`,
+              },
+              body: JSON.stringify({
+                from: resendFrom,
+                to: ownerEmail,
+                subject: `${subject} [Preview for ${email}]`,
+                html: `<div style="background:#1e293b;color:#f8fafc;padding:14px;border-left:4px solid #3b82f6;border-radius:6px;margin-bottom:20px;font-family:sans-serif;font-size:14px;"><strong>ℹ️ Resend Sandbox Notice:</strong> This welcome email was generated for <strong>${email}</strong> and delivered to your registered Resend account (<strong>${ownerEmail}</strong>) because a custom domain is not yet verified.</div>` + htmlBody,
+                text: `[Resend Sandbox preview for ${email}]\n\n` + textBody,
+              }),
+            });
+          } else {
+            throw new Error(`Resend API returned HTTP status 403: ${errText}`);
+          }
+        }
+
         if (!res.ok) {
           const errText = await res.text();
           throw new Error(`Resend API returned HTTP status ${res.status}: ${errText}`);
