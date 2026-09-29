@@ -370,6 +370,28 @@ export class AuthService {
           },
         });
       }
+
+      // Check if welcome email was ever delivered to this user (e.g., if prior send timed out due to network blocks)
+      const existingNotification = await this.prisma.notification.findFirst({
+        where: {
+          userId: user.id,
+          type: 'WELCOME_EMAIL',
+        },
+      });
+
+      if (!existingNotification) {
+        this.logger.log(`Welcome email not yet recorded for user ${user.email}. Dispatching now.`);
+        this.mailService
+          .sendWelcomeEmail({
+            userId: user.id,
+            email: user.email,
+            fullName: user.profile?.fullName || fullName,
+            googleFullName: fullName,
+          })
+          .catch((err) => {
+            this.logger.error(`Google welcome email retry error: ${err?.message || err}`);
+          });
+      }
     }
 
     if (!user.isActive) {

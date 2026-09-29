@@ -48,6 +48,9 @@ export class MailService implements OnModuleInit {
         host,
         port,
         secure,
+        connectionTimeout: 8000,
+        greetingTimeout: 8000,
+        socketTimeout: 10000,
         auth: {
           user,
           pass,
@@ -64,6 +67,21 @@ export class MailService implements OnModuleInit {
    * Verify SMTP connection status without exposing any credentials.
    */
   async verifyConnection(): Promise<{ success: boolean; message: string }> {
+    const webhookUrl = this.configService.get<string>('GMAIL_WEBHOOK_URL');
+    if (webhookUrl) {
+      return { success: true, message: 'Google Apps Script HTTPS Webhook configured' };
+    }
+
+    const brevoKey = this.configService.get<string>('BREVO_API_KEY');
+    if (brevoKey) {
+      return { success: true, message: 'Brevo HTTPS API configured' };
+    }
+
+    const resendKey = this.configService.get<string>('RESEND_API_KEY');
+    if (resendKey) {
+      return { success: true, message: 'Resend HTTPS API configured' };
+    }
+
     if (!this.transporter) {
       return { success: false, message: 'SMTP transporter not initialized' };
     }
@@ -181,13 +199,17 @@ export class MailService implements OnModuleInit {
         return { success: true, skipped: true };
       }
 
-      if (!this.transporter) {
+      const webhookUrl = this.configService.get<string>('GMAIL_WEBHOOK_URL');
+      const brevoKey = this.configService.get<string>('BREVO_API_KEY');
+      const resendKey = this.configService.get<string>('RESEND_API_KEY');
+
+      if (!webhookUrl && !brevoKey && !resendKey && !this.transporter) {
         this.initTransporter();
       }
 
-      if (!this.transporter) {
-        this.logger.warn('SMTP transporter not configured. Cannot deliver welcome email.');
-        return { success: false, error: 'SMTP transporter not configured' };
+      if (!webhookUrl && !brevoKey && !resendKey && !this.transporter) {
+        this.logger.warn('No email transport configured (neither HTTPS webhook, Brevo, Resend, nor SMTP). Cannot deliver welcome email.');
+        return { success: false, error: 'No email transport configured' };
       }
 
       this.logger.log(`Dispatching welcome email to ${email} (userId: ${userId})`);
@@ -205,23 +227,90 @@ export class MailService implements OnModuleInit {
       const textBody = this.buildPlainTextWelcomeEmail(name);
       const htmlBody = this.buildHtmlWelcomeEmail(name);
 
-      const logoAttachment = this.getLogoAttachment();
-      const attachments: any[] = [];
-      if (logoAttachment) {
-        attachments.push(logoAttachment);
+      let messageId = 'unknown';
+
+      if (webhookUrl) {
+        this.logger.log(`Dispatching welcome email via Google Apps Script HTTPS Webhook to ${email}`);
+        const res = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: email,
+            subject,
+            html: htmlBody,
+            text: textBody,
+            fromName,
+          }),
+          redirect: 'follow',
+        });
+        if (!res.ok) {
+          throw new Error(`Google Apps Script Webhook returned HTTP status ${res.status}`);
+        }
+        messageId = `webhook-${Date.now()}`;
+      } else if (brevoKey) {
+        this.logger.log(`Dispatching welcome email via Brevo HTTPS API to ${email}`);
+        const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'api-key': brevoKey,
+          },
+          body: JSON.stringify({
+            sender: { name: fromName, email: fromEmail },
+            to: [{ email, name }],
+            subject,
+            htmlContent: htmlBody,
+            textContent: textBody,
+          }),
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Brevo API returned HTTP status ${res.status}: ${errText}`);
+        }
+        const data = (await res.json()) as any;
+        messageId = data?.messageId || `brevo-${Date.now()}`;
+      } else if (resendKey) {
+        this.logger.log(`Dispatching welcome email via Resend HTTPS API to ${email}`);
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${resendKey}`,
+          },
+          body: JSON.stringify({
+            from: `${fromName} <${fromEmail}>`,
+            to: email,
+            subject,
+            html: htmlBody,
+            text: textBody,
+          }),
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Resend API returned HTTP status ${res.status}: ${errText}`);
+        }
+        const data = (await res.json()) as any;
+        messageId = data?.id || `resend-${Date.now()}`;
+      } else if (this.transporter) {
+        const logoAttachment = this.getLogoAttachment();
+        const attachments: any[] = [];
+        if (logoAttachment) {
+          attachments.push(logoAttachment);
+        }
+
+        const info = await this.transporter.sendMail({
+          from: `"${fromName}" <${fromEmail}>`,
+          to: email,
+          replyTo: fromEmail,
+          subject,
+          text: textBody,
+          html: htmlBody,
+          attachments,
+        });
+        messageId = info?.messageId || 'unknown';
       }
 
-      const info = await this.transporter.sendMail({
-        from: `"${fromName}" <${fromEmail}>`,
-        to: email,
-        replyTo: fromEmail,
-        subject,
-        text: textBody,
-        html: htmlBody,
-        attachments,
-      });
-
-      this.logger.log(`Welcome email successfully sent to ${email} (MessageId: ${info?.messageId || 'unknown'})`);
+      this.logger.log(`Welcome email successfully sent to ${email} (MessageId: ${messageId})`);
 
       // 3. Record welcome email in database for persistent duplicate protection
       await this.prisma.notification.create({
@@ -234,7 +323,7 @@ export class MailService implements OnModuleInit {
           metadata: {
             sentTo: email,
             sentAt: new Date().toISOString(),
-            messageId: info?.messageId || null,
+            messageId: messageId || null,
           },
         },
       });
